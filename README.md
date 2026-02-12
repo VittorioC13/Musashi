@@ -1,6 +1,6 @@
-# PredBot - Prediction Market Overlay for Twitter/X
+# Musashi - Prediction Market Overlay for Twitter/X
 
-PredBot is a Chrome extension that automatically detects prediction-market-relevant content on Twitter/X and overlays related prediction market odds from Kalshi.
+Musashi is a Chrome extension that automatically detects prediction-market-relevant content on Twitter/X and overlays related prediction market odds from Kalshi.
 
 ## Features
 
@@ -27,7 +27,7 @@ PredBot is a Chrome extension that automatically detects prediction-market-relev
 ### For Development/Testing
 
 1. **Download the extension**:
-   - Navigate to `C:\Users\rotciv\Desktop\predbot-extension\dist`
+   - Navigate to `C:\Users\rotciv\Desktop\Musashi\dist`
 
 2. **Open Chrome Extensions**:
    - Go to `chrome://extensions`
@@ -36,7 +36,7 @@ PredBot is a Chrome extension that automatically detects prediction-market-relev
 3. **Load the extension**:
    - Click "Load unpacked"
    - Select the `dist` folder
-   - PredBot should appear in your extensions list
+   - Musashi should appear in your extensions list
 
 4. **Start using**:
    - Visit Twitter/X (twitter.com or x.com)
@@ -70,7 +70,7 @@ PredBot is a Chrome extension that automatically detects prediction-market-relev
 ## Project Structure
 
 ```
-predbot-extension/
+Musashi/
 ├── manifest.json              # Extension configuration
 ├── package.json               # Dependencies
 ├── webpack.config.js          # Build configuration
@@ -139,7 +139,7 @@ npm run clean
 1. Edit source files in `src/`
 2. Run `npm run build` to rebuild
 3. Go to `chrome://extensions`
-4. Click reload icon on PredBot card
+4. Click reload icon on Musashi card
 5. Refresh Twitter/X tab to see changes
 
 ### Adding New Markets
@@ -228,7 +228,7 @@ Edit `src/data/mock-markets.ts`:
 
 ### Badge not updating
 - Service worker may need reload
-- Go to `chrome://extensions` → reload PredBot
+- Go to `chrome://extensions` → reload Musashi
 
 ## Contributing
 

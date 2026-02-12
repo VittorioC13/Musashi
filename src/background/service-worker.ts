@@ -1,7 +1,7 @@
-// PredBot Service Worker
+// Musashi Service Worker
 // Handles background tasks like badge updates
 
-console.log('PredBot service worker initialized');
+console.log('Musashi service worker initialized');
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
 
       chrome.action.setBadgeBackgroundColor({
-        color: '#8B5CF6', // predbot-purple
+        color: '#A8C5DD', // musashi-blue (Cloud Dancer)
         tabId: sender.tab.id,
       });
     }

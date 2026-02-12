@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "PredBot",
+  "name": "Musashi",
   "version": "1.0.0",
   "description": "Overlay prediction market odds from Kalshi on Twitter/X",
   "permissions": [

@@ -17,7 +17,7 @@ export class TwitterExtractor {
   private onTweetsDetected: ((tweets: Tweet[]) => void) | null = null;
 
   constructor() {
-    console.log('[PredBot] Twitter extractor initialized');
+    console.log('[Musashi] Twitter extractor initialized');
   }
 
   /**
@@ -32,7 +32,7 @@ export class TwitterExtractor {
     // Set up MutationObserver to watch for new tweets
     this.setupObserver();
 
-    console.log('[PredBot] Started monitoring for tweets');
+    console.log('[Musashi] Started monitoring for tweets');
   }
 
   /**
@@ -47,7 +47,7 @@ export class TwitterExtractor {
       clearTimeout(this.processingTimer);
       this.processingTimer = null;
     }
-    console.log('[PredBot] Stopped monitoring');
+    console.log('[Musashi] Stopped monitoring');
   }
 
   /**
@@ -55,7 +55,7 @@ export class TwitterExtractor {
    */
   private processExistingTweets(): void {
     const tweetElements = this.findTweetElements();
-    console.log(`[PredBot] Found ${tweetElements.length} existing tweets`);
+    console.log(`[Musashi] Found ${tweetElements.length} existing tweets`);
 
     if (tweetElements.length > 0) {
       this.processingQueue.push(...tweetElements);
@@ -90,7 +90,7 @@ export class TwitterExtractor {
       }
 
       if (newTweetElements.length > 0) {
-        console.log(`[PredBot] Detected ${newTweetElements.length} new tweets`);
+        console.log(`[Musashi] Detected ${newTweetElements.length} new tweets`);
         this.processingQueue.push(...newTweetElements);
         this.scheduleBatchProcessing();
       }
@@ -137,7 +137,7 @@ export class TwitterExtractor {
     }
 
     if (tweets.length > 0 && this.onTweetsDetected) {
-      console.log(`[PredBot] Processing ${tweets.length} new tweets`);
+      console.log(`[Musashi] Processing ${tweets.length} new tweets`);
       this.onTweetsDetected(tweets);
     }
   }
@@ -188,7 +188,7 @@ export class TwitterExtractor {
         element,
       };
     } catch (error) {
-      console.error('[PredBot] Error extracting tweet:', error);
+      console.error('[Musashi] Error extracting tweet:', error);
       return null;
     }
   }
@@ -218,6 +218,6 @@ export class TwitterExtractor {
    */
   public clearCache(): void {
     this.processedTweets.clear();
-    console.log('[PredBot] Cleared processed tweets cache');
+    console.log('[Musashi] Cleared processed tweets cache');
   }
 }
