@@ -1,5 +1,5 @@
 // Musashi Content Script
-// Detects tweets on Twitter/X and overlays matching Kalshi prediction markets.
+// Detects tweets on Twitter/X and overlays matching Polymarket prediction markets.
 // Market data is fetched by the background service worker (bypasses CORS).
 
 import { TwitterExtractor, Tweet } from './twitter-extractor';
@@ -9,6 +9,85 @@ import { injectTwitterCard, hasTwitterCard } from './inject-twitter-card';
 import '../sidebar/sidebar.css';
 
 console.log('[Musashi] Content script loaded');
+
+// ── Live price polling ────────────────────────────────────────────────────────
+// Module-level so registerCard/unregisterCard can be imported by inject-twitter-card.
+
+const activeCards = new Map<string, string>(); // marketId → numericId
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+export function registerCard(marketId: string, numericId: string): void {
+  activeCards.set(marketId, numericId);
+  if (pollInterval === null) {
+    pollInterval = setInterval(pollPrices, 30_000);
+  }
+}
+
+export function unregisterCard(marketId: string): void {
+  activeCards.delete(marketId);
+  if (activeCards.size === 0 && pollInterval !== null) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
+
+async function pollPrices(): Promise<void> {
+  if (activeCards.size === 0) return;
+
+  const numericIds = Array.from(activeCards.values()).filter(Boolean);
+  if (numericIds.length === 0) return;
+
+  try {
+    const params = numericIds.map(id => `id=${encodeURIComponent(id)}`).join('&');
+    const resp = await fetch(`https://gamma-api.polymarket.com/markets?${params}`);
+    if (!resp.ok) return;
+
+    const data: Array<{
+      id: string;
+      outcomePrices: string;
+      outcomes: string;
+      oneDayPriceChange?: number;
+    }> = await resp.json();
+
+    if (!Array.isArray(data)) return;
+
+    // Build numericId → prices map
+    const priceByNumericId: Record<string, { yes: number; no: number; oneDayPriceChange: number }> = {};
+    for (const m of data) {
+      try {
+        const prices: string[] = JSON.parse(m.outcomePrices);
+        const outcomes: string[] = JSON.parse(m.outcomes);
+        const yesIdx = outcomes.findIndex(o => o.toLowerCase() === 'yes');
+        if (yesIdx === -1 || !prices[yesIdx]) continue;
+        const yes = Math.min(Math.max(parseFloat(prices[yesIdx]), 0.01), 0.99);
+        priceByNumericId[m.id] = {
+          yes: +yes.toFixed(2),
+          no: +(1 - yes).toFixed(2),
+          oneDayPriceChange: m.oneDayPriceChange ?? 0,
+        };
+      } catch { /* skip malformed */ }
+    }
+
+    // Reverse-map to marketId and dispatch
+    const marketIdPriceMap: Record<string, { yes: number; no: number; oneDayPriceChange: number }> = {};
+    for (const [marketId, numericId] of activeCards.entries()) {
+      if (priceByNumericId[numericId]) {
+        marketIdPriceMap[marketId] = priceByNumericId[numericId];
+      }
+    }
+
+    if (Object.keys(marketIdPriceMap).length > 0) {
+      window.dispatchEvent(
+        new CustomEvent('musashi-price-update', { detail: marketIdPriceMap })
+      );
+      console.log(`[Musashi] Polled ${Object.keys(marketIdPriceMap).length} market price(s)`);
+    }
+  } catch (e) {
+    console.warn('[Musashi] Price poll failed:', e);
+  }
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 const isTwitter =
   window.location.hostname === 'twitter.com' ||
@@ -84,8 +163,6 @@ if (!isTwitter) {
 }
 
 // ── Market loading via service worker ────────────────────────────────────────
-// The service worker fetches Kalshi markets with Origin/Referer headers stripped
-// via declarativeNetRequest rules (prevents Kalshi's 403 Forbidden response).
 
 async function loadMarketsFromServiceWorker(): Promise<Market[]> {
   return new Promise((resolve) => {
@@ -106,5 +183,3 @@ async function loadMarketsFromServiceWorker(): Promise<Market[]> {
     }
   });
 }
-
-export {};

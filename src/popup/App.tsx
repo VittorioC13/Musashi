@@ -31,12 +31,12 @@ const App: React.FC = () => {
       {/* Quick Links */}
       <div className="space-y-2 mb-4">
         <a
-          href="https://kalshi.com"
+          href="https://polymarket.com"
           target="_blank"
           rel="noopener noreferrer"
           className="block text-center text-xs font-medium text-musashi-blue hover:text-musashi-blue-dark hover:underline transition-colors"
         >
-          Visit Kalshi →
+          Visit Polymarket →
         </a>
       </div>
 

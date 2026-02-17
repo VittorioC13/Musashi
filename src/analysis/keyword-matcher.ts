@@ -222,13 +222,66 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'ev':               ['electric vehicle', 'tesla', 'clean energy'],
   'electric vehicle': ['ev', 'tesla'],
   'tesla':            ['ev', 'electric vehicle', 'elon musk'],
-  'elon musk':        ['tesla', 'spacex', 'twitter', 'x'],
-  'musk':             ['tesla', 'elon musk', 'spacex'],
+  'elon musk':        ['tesla', 'spacex', 'twitter', 'x', 'doge'],
+  'musk':             ['tesla', 'elon musk', 'spacex', 'doge'],
+  'elon':             ['elon musk', 'tesla', 'spacex', 'doge'],
   'net zero':         ['climate', 'emissions', 'carbon'],
   'paris agreement':  ['climate', 'emissions', 'net zero'],
   'carbon':           ['climate', 'emissions', 'carbon tax'],
   'global warming':   ['climate change', 'climate', 'temperature'],
   'climate change':   ['global warming', 'climate', 'emissions'],
+
+  // Trade / Tariffs (2025 dominant news topic)
+  'tariff':           ['trade war', 'trade deal', 'import tax', 'china trade', 'trade'],
+  'tariffs':          ['tariff', 'trade war', 'trade deal', 'import tax'],
+  'trade war':        ['tariff', 'tariffs', 'china', 'trade deal'],
+  'trade deal':       ['tariff', 'tariffs', 'trade war', 'trade'],
+  'import tax':       ['tariff', 'tariffs', 'trade'],
+  'sanctions':        ['trade', 'russia', 'china', 'iran'],
+
+  // Immigration / Border
+  'deportation':      ['immigration', 'border', 'ice', 'migrants', 'undocumented'],
+  'deport':           ['deportation', 'immigration', 'ice', 'border'],
+  'immigration':      ['border', 'deportation', 'ice', 'migrants'],
+  'border':           ['immigration', 'deportation', 'wall'],
+  'migrants':         ['immigration', 'border', 'deportation'],
+  'ice':              ['deportation', 'immigration', 'border'],
+
+  // AI Models & Companies (2025/2026)
+  'deepseek':         ['ai', 'llm', 'china ai', 'artificial intelligence'],
+  'llama':            ['meta', 'ai', 'llm', 'open source ai'],
+  'mistral':          ['ai', 'llm', 'artificial intelligence'],
+  'grok':             ['xai', 'elon musk', 'ai', 'llm'],
+  'xai':              ['grok', 'elon musk', 'ai'],
+  'perplexity':       ['ai', 'search', 'llm'],
+  'cursor':           ['ai', 'coding', 'developer tools'],
+  'copilot':          ['microsoft', 'msft', 'ai', 'github'],
+  'sora':             ['openai', 'ai', 'video ai'],
+  'o1':               ['openai', 'chatgpt', 'ai', 'reasoning'],
+  'o3':               ['openai', 'chatgpt', 'ai', 'reasoning'],
+
+  // Specific people (2025)
+  'trump':            ['president', 'potus', 'administration', 'gop', 'republican'],
+  'donald trump':     ['trump', 'potus', 'president', 'republican'],
+  'biden':            ['president', 'potus', 'democrat', 'administration'],
+  'harris':           ['democrat', 'kamala', 'vice president'],
+  'marco rubio':      ['senate', 'republican', 'secretary of state'],
+  'rfk':              ['health', 'vaccines', 'kennedy'],
+  'vivek':            ['doge', 'republican', 'government efficiency'],
+
+  // More crypto (2025)
+  'sui':              ['crypto', 'layer 1'],
+  'apt':              ['aptos', 'crypto', 'layer 1'],
+  'aptos':            ['apt', 'crypto', 'layer 1'],
+  'ton':              ['telegram', 'crypto'],
+  'bnb':              ['binance', 'crypto'],
+  'avax':             ['avalanche', 'crypto'],
+  'avalanche':        ['avax', 'crypto'],
+  'trump coin':       ['crypto', 'meme coin', 'trump'],
+  'meme':             ['memecoin', 'crypto', 'doge'],
+  'stablecoin bill':  ['stablecoin', 'crypto regulation', 'congress'],
+  'crypto bill':      ['crypto regulation', 'sec', 'congress'],
+  'strategic reserve':['bitcoin', 'btc', 'crypto', 'trump'],
 };
 
 // ─── Utility functions ───────────────────────────────────────────────────────

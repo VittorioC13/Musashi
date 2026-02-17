@@ -27,6 +27,8 @@ interface PolymarketMarket {
   active: boolean;
   closed: boolean;
   category?: string;
+  oneDayPriceChange?: number;   // 24h YES price delta
+  endDateIso?: string;          // ISO date e.g. "2026-03-31"
 }
 
 /**
@@ -65,6 +67,7 @@ export async function fetchPolymarkets(
   for (let page = 0; page < maxPages; page++) {
     const url =
       `${POLYMARKET_API}/markets?closed=false&active=true` +
+      `&order=volume24hrClob&ascending=false` +
       `&limit=${PAGE_SIZE}&offset=${offset}`;
 
     const resp = await fetch(url);
@@ -131,6 +134,9 @@ function toMarket(pm: PolymarketMarket): Market {
     url: `https://polymarket.com/event/${pm.events?.[0]?.slug ?? pm.slug}`,
     category: inferCategory(pm.question, pm.category),
     lastUpdated: new Date().toISOString(),
+    numericId: pm.id,
+    oneDayPriceChange: pm.oneDayPriceChange ?? 0,
+    endDate: pm.endDateIso ?? undefined,
   };
 }
 

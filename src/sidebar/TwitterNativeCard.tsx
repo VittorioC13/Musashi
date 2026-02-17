@@ -1,15 +1,86 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Market } from '../types/market';
 
 interface TwitterNativeCardProps {
   market: Market;
   confidence: number;
+  onMount?: () => void;
+  onUnmount?: () => void;
 }
 
-const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({ market, confidence }) => {
-  const yesPercent = Math.round(market.yesPrice * 100);
-  const noPercent = Math.round(market.noPrice * 100);
-  const isYesWinning = market.yesPrice > 0.5;
+interface PriceUpdate {
+  yes: number;
+  no: number;
+  oneDayPriceChange: number;
+}
+
+type PriceFlash = 'up' | 'down' | null;
+
+const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
+  market,
+  confidence,
+  onMount,
+  onUnmount,
+}) => {
+  const [liveYes, setLiveYes] = useState(market.yesPrice);
+  const [liveNo, setLiveNo]   = useState(market.noPrice);
+  const [dayChange, setDayChange] = useState(market.oneDayPriceChange ?? 0);
+  const [yesFlash, setYesFlash] = useState<PriceFlash>(null);
+  const [noFlash,  setNoFlash]  = useState<PriceFlash>(null);
+  const prevYes = useRef(market.yesPrice);
+
+  // Register/unregister with polling orchestrator
+  useEffect(() => {
+    onMount?.();
+    return () => onUnmount?.();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Subscribe to live price updates dispatched by content-script polling
+  useEffect(() => {
+    function handlePriceUpdate(e: Event) {
+      const detail = (e as CustomEvent<Record<string, PriceUpdate>>).detail;
+      const update = detail[market.id];
+      if (!update) return;
+
+      const direction: PriceFlash = update.yes > prevYes.current ? 'up'
+        : update.yes < prevYes.current ? 'down'
+        : null;
+
+      if (direction) {
+        setYesFlash(direction);
+        setNoFlash(direction === 'up' ? 'down' : 'up');
+        setTimeout(() => { setYesFlash(null); setNoFlash(null); }, 1000);
+      }
+
+      prevYes.current = update.yes;
+      setLiveYes(update.yes);
+      setLiveNo(update.no);
+      setDayChange(update.oneDayPriceChange);
+    }
+
+    window.addEventListener('musashi-price-update', handlePriceUpdate);
+    return () => window.removeEventListener('musashi-price-update', handlePriceUpdate);
+  }, [market.id]);
+
+  const yesPercent = Math.round(liveYes * 100);
+  const noPercent  = Math.round(liveNo  * 100);
+  const isYesWinning = liveYes >= 0.5;
+
+  // Format end date: "2026-03-31" → "Mar 31"
+  const endDateLabel = React.useMemo(() => {
+    if (!market.endDate) return null;
+    try {
+      const d = new Date(market.endDate + 'T00:00:00Z');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    } catch { return null; }
+  }, [market.endDate]);
+
+  // Format 24h change: 0.052 → "+5.2%", -0.03 → "-3.0%"
+  const changeLabel = React.useMemo(() => {
+    if (!dayChange) return null;
+    const pct = (dayChange * 100).toFixed(1);
+    return dayChange > 0 ? `+${pct}%` : `${pct}%`;
+  }, [dayChange]);
 
   return (
     <a
@@ -39,12 +110,16 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({ market, confidenc
         {market.title}
       </h3>
 
-      {/* Odds Display - Twitter style */}
-      <div className="flex items-center gap-4">
+      {/* Odds Display */}
+      <div className="flex items-center gap-4 mb-2">
         {/* YES */}
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 px-2 py-0.5 rounded-md transition-colors duration-300 ${
+          yesFlash === 'up'   ? 'musashi-flash-up'
+          : yesFlash === 'down' ? 'musashi-flash-down'
+          : ''
+        }`}>
           <span className="text-xs text-gray-500 uppercase tracking-wide">Yes</span>
-          <span className={`text-lg font-semibold ${isYesWinning ? 'text-green-600' : 'text-gray-700'}`}>
+          <span className={`text-lg font-semibold transition-all duration-300 ${isYesWinning ? 'text-green-600' : 'text-gray-700'}`}>
             {yesPercent}%
           </span>
           {isYesWinning && (
@@ -58,9 +133,13 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({ market, confidenc
         <div className="w-px h-6 bg-gray-200"></div>
 
         {/* NO */}
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 px-2 py-0.5 rounded-md transition-colors duration-300 ${
+          noFlash === 'up'   ? 'musashi-flash-up'
+          : noFlash === 'down' ? 'musashi-flash-down'
+          : ''
+        }`}>
           <span className="text-xs text-gray-500 uppercase tracking-wide">No</span>
-          <span className={`text-lg font-semibold ${!isYesWinning ? 'text-red-600' : 'text-gray-700'}`}>
+          <span className={`text-lg font-semibold transition-all duration-300 ${!isYesWinning ? 'text-red-600' : 'text-gray-700'}`}>
             {noPercent}%
           </span>
           {!isYesWinning && (
@@ -69,7 +148,25 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({ market, confidenc
             </svg>
           )}
         </div>
+
+        {/* 24h change pill */}
+        {changeLabel && (
+          <span className={`ml-auto text-xs font-medium px-1.5 py-0.5 rounded ${
+            dayChange > 0
+              ? 'text-green-700 bg-green-50'
+              : 'text-red-700 bg-red-50'
+          }`}>
+            {changeLabel}
+          </span>
+        )}
       </div>
+
+      {/* End date */}
+      {endDateLabel && (
+        <div className="text-xs text-gray-400 mt-1">
+          Resolves {endDateLabel}
+        </div>
+      )}
     </a>
   );
 };

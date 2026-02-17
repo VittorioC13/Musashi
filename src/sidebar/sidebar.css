@@ -350,3 +350,27 @@
     height: 22px;
   }
 }
+
+/* ==============================================
+   LIVE PRICE FLASH ANIMATIONS
+   ============================================== */
+
+@keyframes flash-up {
+  0%   { background-color: transparent; }
+  20%  { background-color: rgba(16, 185, 129, 0.18); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-down {
+  0%   { background-color: transparent; }
+  20%  { background-color: rgba(239, 68, 68, 0.18); }
+  100% { background-color: transparent; }
+}
+
+.musashi-flash-up {
+  animation: flash-up 1s ease-out forwards;
+}
+
+.musashi-flash-down {
+  animation: flash-down 1s ease-out forwards;
+}

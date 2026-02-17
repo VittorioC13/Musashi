@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import TwitterNativeCard from '../sidebar/TwitterNativeCard';
 import { MarketMatch } from '../types/market';
+import { registerCard, unregisterCard } from './content-script';
 
 // Track which tweets have cards injected
 const injectedTweets = new Map<HTMLElement, { container: HTMLElement; root: ReactDOM.Root }>();
@@ -27,10 +28,8 @@ export function injectTwitterCard(
   }
 
   // Find the parent container that holds tweet content
-  // We want to inject AFTER the text, like Twitter does with link previews
   let insertionPoint = tweetTextElement.parentElement;
 
-  // Try to find the tweet content container
   while (insertionPoint && !insertionPoint.querySelector('[data-testid="tweetText"]')?.parentElement) {
     insertionPoint = insertionPoint.parentElement;
   }
@@ -51,18 +50,29 @@ export function injectTwitterCard(
     insertionPoint.parentElement?.appendChild(cardContainer);
   }
 
-  // Render the card
+  const { market, confidence } = match;
+
+  // Render the card, wiring register/unregister for live price polling
   const root = ReactDOM.createRoot(cardContainer);
   root.render(
     <React.StrictMode>
-      <TwitterNativeCard market={match.market} confidence={match.confidence} />
+      <TwitterNativeCard
+        market={market}
+        confidence={confidence}
+        onMount={() => {
+          if (market.numericId) {
+            registerCard(market.id, market.numericId);
+          }
+        }}
+        onUnmount={() => unregisterCard(market.id)}
+      />
     </React.StrictMode>
   );
 
   // Track injection
   injectedTweets.set(tweetElement, { container: cardContainer, root });
 
-  console.log('[Musashi] Injected Twitter-native card for:', match.market.title);
+  console.log('[Musashi] Injected Twitter-native card for:', market.title);
 }
 
 /**
@@ -75,9 +85,19 @@ export function updateTwitterCard(
   const existing = injectedTweets.get(tweetElement);
 
   if (existing) {
+    const { market, confidence } = match;
     existing.root.render(
       <React.StrictMode>
-        <TwitterNativeCard market={match.market} confidence={match.confidence} />
+        <TwitterNativeCard
+          market={market}
+          confidence={confidence}
+          onMount={() => {
+            if (market.numericId) {
+              registerCard(market.id, market.numericId);
+            }
+          }}
+          onUnmount={() => unregisterCard(market.id)}
+        />
       </React.StrictMode>
     );
   } else {

@@ -12,6 +12,9 @@ export interface Market {
   url: string;
   category: string;
   lastUpdated: string; // ISO timestamp
+  numericId?: string;          // Polymarket numeric ID for live price polling
+  oneDayPriceChange?: number;  // 24h price delta for YES (e.g. 0.05 = +5%)
+  endDate?: string;            // ISO date string (e.g. "2026-03-31")
 }
 
 export interface MarketMatch {
