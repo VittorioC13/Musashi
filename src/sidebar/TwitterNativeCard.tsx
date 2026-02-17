@@ -27,7 +27,9 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({ market, confidenc
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 font-normal">Prediction Market</span>
           <span className="text-xs text-gray-400">•</span>
-          <span className="text-xs text-gray-500 font-normal">Kalshi</span>
+          <span className="text-xs text-gray-500 font-normal">
+            {market.platform === 'polymarket' ? 'Polymarket' : 'Kalshi'}
+          </span>
         </div>
         <span className="text-xs text-gray-400">{Math.round(confidence * 100)}% match</span>
       </div>
