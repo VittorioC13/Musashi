@@ -352,6 +352,27 @@
 }
 
 /* ==============================================
+   PROBABILITY BAR
+   ============================================== */
+
+/* Track — near-invisible gray, implies the "no" side through absence */
+.musashi-prob-bar {
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.07);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+/* Fill — yes probability, grows from left */
+.musashi-prob-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #10B981, #34D399);
+  transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==============================================
    LIVE PRICE FLASH ANIMATIONS
    ============================================== */
 

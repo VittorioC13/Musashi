@@ -27,12 +27,19 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
   const [dayChange, setDayChange] = useState(market.oneDayPriceChange ?? 0);
   const [yesFlash, setYesFlash] = useState<PriceFlash>(null);
   const [noFlash,  setNoFlash]  = useState<PriceFlash>(null);
+  const [barWidth, setBarWidth] = useState(0); // starts at 0 for entry animation
   const prevYes = useRef(market.yesPrice);
 
   // Register/unregister with polling orchestrator
   useEffect(() => {
     onMount?.();
     return () => onUnmount?.();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Entry animation: give the DOM one frame to render width:0, then transition to actual value
+  useEffect(() => {
+    const t = setTimeout(() => setBarWidth(Math.round(market.yesPrice * 100)), 50);
+    return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subscribe to live price updates dispatched by content-script polling
@@ -56,6 +63,7 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
       setLiveYes(update.yes);
       setLiveNo(update.no);
       setDayChange(update.oneDayPriceChange);
+      setBarWidth(Math.round(update.yes * 100));
     }
 
     window.addEventListener('musashi-price-update', handlePriceUpdate);
@@ -161,9 +169,14 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
         )}
       </div>
 
+      {/* Probability bar */}
+      <div className="musashi-prob-bar">
+        <div className="musashi-prob-bar-fill" style={{ width: `${barWidth}%` }} />
+      </div>
+
       {/* End date */}
       {endDateLabel && (
-        <div className="text-xs text-gray-400 mt-1">
+        <div className="text-xs text-gray-400 mt-2">
           Resolves {endDateLabel}
         </div>
       )}
