@@ -269,6 +269,26 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'rfk':              ['health', 'vaccines', 'kennedy'],
   'vivek':            ['doge', 'republican', 'government efficiency'],
 
+  // Stocks / Companies (2025)
+  'palantir':         ['pltr', 'data analytics', 'defense'],
+  'pltr':             ['palantir'],
+  'saylor':           ['bitcoin', 'btc', 'microstrategy', 'mstr'],
+  'microstrategy':    ['bitcoin', 'btc', 'mstr', 'saylor'],
+  'mstr':             ['microstrategy', 'bitcoin', 'btc'],
+  'blackrock':        ['etf', 'bitcoin etf', 'institutional'],
+  'robinhood':        ['stocks', 'crypto', 'retail investing'],
+  'ipo':              ['stocks', 'listing', 'public offering'],
+
+  // Geopolitics / Countries
+  'japan':            ['japanese', 'yen', 'nikkei', 'jpy'],
+  'japanese':         ['japan', 'yen'],
+  'china':            ['chinese', 'prc', 'beijing', 'xi'],
+  'india':            ['modi', 'rupee', 'bse'],
+  'germany':          ['german', 'euro', 'bund', 'europe'],
+  'uk':               ['britain', 'gbp', 'pound', 'boe'],
+  'iran':             ['nuclear', 'sanctions', 'middle east'],
+  'north korea':      ['kim jong un', 'nuclear', 'missiles'],
+
   // More crypto (2025)
   'sui':              ['crypto', 'layer 1'],
   'apt':              ['aptos', 'crypto', 'layer 1'],
