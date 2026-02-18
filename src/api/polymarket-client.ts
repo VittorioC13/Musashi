@@ -57,8 +57,8 @@ function isBinaryMarket(pm: PolymarketMarket): boolean {
  * Uses cursor-based pagination until we have enough markets.
  */
 export async function fetchPolymarkets(
-  targetCount = 150,
-  maxPages = 5,
+  targetCount = 500,
+  maxPages = 10,
 ): Promise<Market[]> {
   const PAGE_SIZE = 100;
   const allMarkets: Market[] = [];

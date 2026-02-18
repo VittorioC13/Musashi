@@ -302,6 +302,171 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'stablecoin bill':  ['stablecoin', 'crypto regulation', 'congress'],
   'crypto bill':      ['crypto regulation', 'sec', 'congress'],
   'strategic reserve':['bitcoin', 'btc', 'crypto'],
+
+  // ── Wall Street / Banks / Institutions ───────────────────────────────────
+  'goldman sachs':    ['bitcoin', 'crypto', 'bank', 'institutional', 'wall street'],
+  'goldman':          ['goldman sachs', 'bank', 'wall street'],
+  'david solomon':    ['goldman sachs', 'bitcoin', 'bank'],
+  'solomon':          ['goldman sachs', 'bank', 'bitcoin'],
+  'jpmorgan':         ['bank', 'jamie dimon', 'financial', 'wall street'],
+  'jp morgan':        ['jpmorgan', 'bank', 'jamie dimon'],
+  'jamie dimon':      ['jpmorgan', 'bank', 'bitcoin'],
+  'dimon':            ['jpmorgan', 'bank', 'jamie dimon'],
+  'morgan stanley':   ['bank', 'wall street', 'institutional'],
+  'bank of america':  ['bank', 'bofa', 'financial'],
+  'bofa':             ['bank of america', 'bank'],
+  'wells fargo':      ['bank', 'financial'],
+  'citigroup':        ['bank', 'citi', 'financial'],
+  'citi':             ['citigroup', 'bank'],
+  'hsbc':             ['bank', 'financial'],
+  'wall street':      ['banks', 'financial', 'stocks', 'institutional'],
+  'larry fink':       ['blackrock', 'etf', 'bitcoin etf', 'institutional'],
+  'fink':             ['blackrock', 'etf', 'bitcoin etf'],
+  'ray dalio':        ['bridgewater', 'hedge fund', 'investment'],
+  'dalio':            ['bridgewater', 'investment'],
+  'warren buffett':   ['berkshire', 'stocks', 'investment'],
+  'buffett':          ['berkshire', 'stocks'],
+  'berkshire':        ['warren buffett', 'stocks', 'insurance'],
+  'citadel':          ['ken griffin', 'market maker', 'hedge fund'],
+  'ken griffin':      ['citadel', 'hedge fund'],
+  'bridgewater':      ['ray dalio', 'hedge fund'],
+  'ubs':              ['bank', 'switzerland', 'financial'],
+  'deutsche bank':    ['bank', 'german', 'financial'],
+  'standard chartered': ['bank', 'financial'],
+
+  // ── Institutional crypto adoption ─────────────────────────────────────────
+  'fidelity':         ['bitcoin etf', 'fbtc', 'etf', 'institutional'],
+  'fbtc':             ['fidelity', 'bitcoin etf', 'etf'],
+  'ibit':             ['blackrock', 'bitcoin etf', 'etf'],
+  'gbtc':             ['grayscale', 'bitcoin etf', 'crypto'],
+  'grayscale':        ['gbtc', 'bitcoin etf', 'crypto', 'etf'],
+  'bitwise':          ['bitcoin etf', 'etf', 'crypto'],
+  'ark invest':       ['cathie wood', 'etf', 'bitcoin etf'],
+  'cathie wood':      ['ark invest', 'etf', 'bitcoin'],
+  'cathie':           ['ark invest', 'bitcoin etf'],
+  'institutional adoption': ['bitcoin', 'crypto', 'etf'],
+  'institutional':    ['bitcoin', 'etf', 'wall street'],
+  'treasury':         ['bitcoin', 'strategic reserve', 'government'],
+
+  // ── Crypto news phrases ───────────────────────────────────────────────────
+  'hodl':             ['bitcoin', 'btc', 'crypto'],
+  'holds bitcoin':    ['bitcoin', 'btc', 'crypto'],
+  'owns bitcoin':     ['bitcoin', 'btc', 'crypto'],
+  'buys bitcoin':     ['bitcoin', 'btc', 'crypto'],
+  'bought bitcoin':   ['bitcoin', 'btc', 'crypto'],
+  'adding bitcoin':   ['bitcoin', 'btc', 'crypto'],
+  'digital gold':     ['bitcoin', 'btc', 'store of value'],
+  'store of value':   ['bitcoin', 'btc', 'gold'],
+  'proof of work':    ['bitcoin', 'btc', 'mining'],
+  'pow':              ['proof of work', 'bitcoin', 'mining'],
+  'mining':           ['bitcoin', 'btc', 'hashrate'],
+  'hashrate':         ['bitcoin', 'btc', 'mining'],
+  'satoshi':          ['bitcoin', 'btc'],
+  'sats':             ['bitcoin', 'btc', 'satoshi'],
+  'lightning':        ['bitcoin', 'btc', 'lightning network'],
+  'ordinals':         ['bitcoin', 'btc', 'nft'],
+  'runes':            ['bitcoin', 'btc'],
+  'taproot':          ['bitcoin', 'btc'],
+  'all time high':    ['bitcoin', 'crypto', 'stocks', 'ath'],
+  'ath':              ['all time high', 'bitcoin', 'crypto'],
+  'all-time high':    ['bitcoin', 'crypto', 'ath'],
+  'new high':         ['bitcoin', 'crypto', 'stocks'],
+  '100k':             ['bitcoin', 'btc', 'price target'],
+  '150k':             ['bitcoin', 'btc', 'price target'],
+  '200k':             ['bitcoin', 'btc', 'price target'],
+
+  // ── Politics / Executive branch (2025-2026) ───────────────────────────────
+  'scott bessent':    ['treasury', 'fiscal', 'secretary treasury'],
+  'bessent':          ['treasury', 'fiscal policy'],
+  'howard lutnick':   ['commerce', 'cantor fitzgerald', 'trade'],
+  'lutnick':          ['commerce', 'trade'],
+  'peter navarro':    ['tariff', 'trade war', 'china'],
+  'navarro':          ['tariff', 'trade war'],
+  'robert kennedy':   ['rfk', 'health', 'vaccines'],
+  'department of government efficiency': ['doge', 'spending cuts'],
+
+  // ── Tech companies / AI (2025-2026) ──────────────────────────────────────
+  'amazon':           ['amzn', 'aws', 'cloud', 'bezos'],
+  'amzn':             ['amazon'],
+  'jeff bezos':       ['amazon', 'amzn'],
+  'bezos':            ['amazon', 'amzn'],
+  'andy jassy':       ['amazon', 'aws'],
+  'spacex':           ['elon musk', 'rockets', 'starship'],
+  'starship':         ['spacex', 'elon musk'],
+  'starlink':         ['spacex', 'elon musk', 'satellite'],
+  'mark zuckerberg':  ['meta', 'facebook', 'instagram'],
+  'zuckerberg':       ['meta', 'facebook', 'ai'],
+  'sundar pichai':    ['google', 'alphabet', 'ai'],
+  'satya nadella':    ['microsoft', 'msft', 'ai'],
+  'intel':            ['semiconductors', 'chips'],
+  'amd':              ['semiconductors', 'chips', 'gpu'],
+  'qualcomm':         ['semiconductors', 'chips', 'mobile'],
+  'arm':              ['semiconductors', 'chips'],
+
+  // ── Macro / Global economy ────────────────────────────────────────────────
+  'ecb':              ['european central bank', 'euro', 'interest rates'],
+  'european central bank': ['ecb', 'euro', 'interest rates'],
+  'boe':              ['bank of england', 'pound', 'interest rates'],
+  'bank of england':  ['boe', 'pound', 'interest rates'],
+  'pboc':             ['china', 'yuan', 'interest rates'],
+  'boj':              ['bank of japan', 'yen', 'japan'],
+  'bank of japan':    ['boj', 'yen', 'japan'],
+  'dollar':           ['usd', 'dxy', 'currency'],
+  'dxy':              ['dollar', 'usd', 'currency'],
+  'usd':              ['dollar', 'dxy'],
+  'euro':             ['eur', 'ecb', 'europe'],
+  'eur':              ['euro', 'ecb'],
+  'yen':              ['jpy', 'japan', 'boj'],
+  'jpy':              ['yen', 'japan'],
+  'yuan':             ['cny', 'rmb', 'china'],
+  'gold':             ['xau', 'precious metals', 'store of value', 'commodity'],
+  'xau':              ['gold', 'precious metals'],
+  'silver':           ['xag', 'precious metals', 'commodity'],
+  'commodities':      ['gold', 'oil', 'energy', 'agriculture'],
+  'housing market':   ['real estate', 'mortgage', 'fed'],
+  'mortgage':         ['housing market', 'real estate', 'interest rates', 'fed'],
+  'real estate':      ['housing market', 'mortgage'],
+  'debt ceiling':     ['congress', 'fiscal', 'treasury'],
+  'default':          ['debt', 'treasury', 'bonds'],
+  'bonds':            ['treasuries', 'yield', 'interest rates'],
+  'yield':            ['bonds', 'treasuries', 'interest rates'],
+
+  // ── Sports / Entertainment (expanded) ────────────────────────────────────
+  'chiefs':           ['kansas city', 'nfl', 'mahomes', 'super bowl'],
+  'eagles':           ['philadelphia', 'nfl', 'super bowl'],
+  'rams':             ['los angeles', 'nfl', 'super bowl'],
+  'bills':            ['buffalo', 'nfl', 'super bowl'],
+  'warriors':         ['golden state', 'nba', 'basketball'],
+  'heat':             ['miami', 'nba', 'basketball'],
+  'knicks':           ['new york', 'nba', 'basketball'],
+  'lebron':           ['lakers', 'nba', 'basketball'],
+  'curry':            ['warriors', 'nba', 'basketball'],
+  'messi':            ['soccer', 'football', 'inter miami'],
+  'ronaldo':          ['soccer', 'football', 'cr7'],
+  'wimbledon':        ['tennis', 'grand slam'],
+  'us open':          ['tennis', 'grand slam'],
+  'masters':          ['golf', 'augusta'],
+  'oscars':           ['academy awards', 'movies', 'film'],
+  'academy awards':   ['oscars', 'movies', 'film'],
+  'grammy':           ['music', 'awards'],
+  'emmys':            ['tv', 'television', 'awards'],
+
+  // ── Geopolitics (extended) ────────────────────────────────────────────────
+  'middle east':      ['israel', 'gaza', 'iran', 'saudi'],
+  'saudi':            ['saudi arabia', 'oil', 'opec'],
+  'saudi arabia':     ['saudi', 'oil', 'opec'],
+  'hamas':            ['gaza', 'israel', 'middle east'],
+  'hezbollah':        ['israel', 'middle east', 'iran'],
+  'kim jong un':      ['north korea', 'nuclear', 'missiles'],
+  'kim':              ['north korea', 'nuclear'],
+  'modi':             ['india', 'bjp'],
+  'macron':           ['france', 'europe', 'eu'],
+  'sunak':            ['uk', 'britain'],
+  'scholz':           ['germany', 'german', 'eu'],
+  'europe':           ['eu', 'european', 'ecb'],
+  'eu':               ['europe', 'european union'],
+  'africa':           ['emerging markets'],
+  'latin america':    ['emerging markets'],
 };
 
 // ─── Utility functions ───────────────────────────────────────────────────────
@@ -389,6 +554,12 @@ function extractTitleTokens(title: string): string[] {
 
 // ─── Scoring ─────────────────────────────────────────────────────────────────
 
+// Cap the normalization denominator so markets with large keyword lists
+// (20-40 keywords from description extraction) don't get artificially low scores.
+// Without this cap, a perfect bitcoin+btc+crypto match on a 25-keyword market
+// scores 2.2/25 = 0.088 — below threshold despite being a strong signal.
+const DENOMINATOR_CAP = 5;
+
 interface MatchCounts {
   exactMatches:   number; // tweet token directly matches market keyword
   synonymMatches: number; // tweet token matched via synonym expansion
@@ -403,10 +574,12 @@ function computeScore(r: MatchCounts): number {
   const weighted =
     r.exactMatches   * 1.0 +
     r.synonymMatches * 0.6 +
-    r.titleMatches   * 0.4;
+    r.titleMatches   * 0.3;
 
-  // Normalize by keyword list length so short and long lists are comparable
-  const normalized = weighted / r.totalChecked;
+  // Normalize by keyword list length, capped to avoid penalizing markets
+  // that happen to have many keywords from description extraction.
+  const denominator = Math.min(r.totalChecked, DENOMINATOR_CAP);
+  const normalized = weighted / denominator;
 
   // Small coverage bonus for matching multiple distinct keywords
   const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
@@ -424,7 +597,7 @@ export class KeywordMatcher {
 
   constructor(
     markets: Market[] = mockMarkets,
-    minConfidence: number = 0.2,
+    minConfidence: number = 0.12,
     maxResults: number = 5
   ) {
     this.markets = markets;
@@ -507,6 +680,7 @@ export class KeywordMatcher {
     const matchedKeywords: string[] = [];
     let exactMatches   = 0;
     let synonymMatches = 0;
+    let titleMatches   = 0;
 
     const explicitKeywords = market.keywords.map(k => k.toLowerCase());
 
@@ -527,10 +701,21 @@ export class KeywordMatcher {
       }
     }
 
+    // Title-word fallback: check if any tweet token appears in the market title.
+    // Weighted lower than explicit keyword matches; catches cases where
+    // generateKeywords() misses a term that's clearly in the title.
+    const titleTokens = extractTitleTokens(market.title);
+    for (const tt of titleTokens) {
+      if (!matchedKeywords.includes(tt) && expandedTokenSet.has(tt)) {
+        titleMatches++;
+        matchedKeywords.push(tt);
+      }
+    }
+
     const confidence = computeScore({
       exactMatches,
       synonymMatches,
-      titleMatches: 0,
+      titleMatches,
       totalChecked: explicitKeywords.length,
     });
 

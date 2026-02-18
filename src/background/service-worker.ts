@@ -102,7 +102,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 async function refreshMarkets() {
   try {
-    const markets = await fetchPolymarkets(250, 5);
+    const markets = await fetchPolymarkets(500, 10);
     if (markets.length > 0) {
       await chrome.storage.local.set({
         [STORAGE_KEY_MARKETS]: markets,
