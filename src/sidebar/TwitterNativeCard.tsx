@@ -90,6 +90,16 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
     return dayChange > 0 ? `+${pct}%` : `${pct}%`;
   }, [dayChange]);
 
+  // Format 24h volume: 42100 → "$42K", 1340000 → "$1.3M", 850 → "$850"
+  const volumeLabel = React.useMemo(() => {
+    const v = market.volume24h;
+    if (!v || v <= 0) return null;
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 10_000)    return `$${Math.round(v / 1_000)}K`;
+    if (v >= 1_000)     return `$${(v / 1_000).toFixed(1)}K`;
+    return `$${Math.round(v)}`;
+  }, [market.volume24h]);
+
   return (
     <a
       href={`${market.url}?ref=musashi`}
@@ -174,10 +184,18 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
         <div className="musashi-prob-bar-fill" style={{ width: `${barWidth}%` }} />
       </div>
 
-      {/* End date */}
-      {endDateLabel && (
-        <div className="text-xs text-gray-400 mt-2">
-          Resolves {endDateLabel}
+      {/* Metadata footer: resolve date + 24h volume */}
+      {(endDateLabel || volumeLabel) && (
+        <div className="flex items-center gap-1.5 mt-2">
+          {endDateLabel && (
+            <span className="text-xs text-gray-400">Resolves {endDateLabel}</span>
+          )}
+          {endDateLabel && volumeLabel && (
+            <span className="text-xs text-gray-300">·</span>
+          )}
+          {volumeLabel && (
+            <span className="text-xs text-gray-400">{volumeLabel}</span>
+          )}
         </div>
       )}
     </a>
