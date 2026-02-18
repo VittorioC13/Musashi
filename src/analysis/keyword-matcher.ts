@@ -277,11 +277,11 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'bnb':              ['binance', 'crypto'],
   'avax':             ['avalanche', 'crypto'],
   'avalanche':        ['avax', 'crypto'],
-  'trump coin':       ['crypto', 'meme coin', 'trump'],
+  'trump coin':       ['crypto', 'meme coin'],
   'meme':             ['memecoin', 'crypto', 'doge'],
   'stablecoin bill':  ['stablecoin', 'crypto regulation', 'congress'],
   'crypto bill':      ['crypto regulation', 'sec', 'congress'],
-  'strategic reserve':['bitcoin', 'btc', 'crypto', 'trump'],
+  'strategic reserve':['bitcoin', 'btc', 'crypto'],
 };
 
 // ─── Utility functions ───────────────────────────────────────────────────────
