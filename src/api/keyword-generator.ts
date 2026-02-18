@@ -72,19 +72,5 @@ export function generateKeywords(title: string): string[] {
     }
   }
 
-  // Reverse lookup: for each SYNONYM_MAP entry, check if any value
-  // is present in our current keyword set and add the key
-  for (const [key, values] of Object.entries(SYNONYM_MAP)) {
-    for (const val of values) {
-      if (keywords.has(val)) {
-        keywords.add(key);
-        // Also add the key's other synonyms
-        const keySyns = SYNONYM_MAP[key];
-        if (keySyns) keySyns.forEach(s => keywords.add(s));
-        break;
-      }
-    }
-  }
-
   return Array.from(keywords);
 }

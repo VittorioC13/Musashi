@@ -70,7 +70,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ prices });
       })
       .catch((e) => {
-        console.error('[Musashi SW] POLL_PRICES fetch failed:', e);
+        console.warn('[Musashi SW] POLL_PRICES fetch failed:', e);
         sendResponse({ prices: {} });
       });
     return true; // keep channel open for async
