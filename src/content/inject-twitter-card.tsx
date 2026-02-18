@@ -8,6 +8,28 @@ import { registerCard, unregisterCard } from './content-script';
 const injectedTweets = new Map<HTMLElement, { container: HTMLElement; root: ReactDOM.Root }>();
 
 /**
+ * Detect whether Twitter is currently in dark mode by sampling the
+ * body background luminance. Works for both Dim (#15202B) and Lights Out (#000).
+ */
+export function detectTwitterTheme(): 'dark' | 'light' {
+  const bg = getComputedStyle(document.body).backgroundColor;
+  const m  = bg.match(/\d+/g);
+  if (!m) return 'light';
+  const [r, g, b] = m.map(Number);
+  return (r * 299 + g * 587 + b * 114) / 1000 < 100 ? 'dark' : 'light';
+}
+
+/**
+ * Toggle .musashi-dark on every injected card container.
+ * Called at injection time and whenever Twitter's theme changes.
+ */
+export function applyThemeToAllCards(theme: 'dark' | 'light'): void {
+  injectedTweets.forEach(({ container }) => {
+    container.classList.toggle('musashi-dark', theme === 'dark');
+  });
+}
+
+/**
  * Inject Twitter-native market card inline within tweet
  * Appears below tweet text, like Twitter's native link previews
  */
@@ -39,9 +61,12 @@ export function injectTwitterCard(
     return;
   }
 
-  // Create card container
+  // Create card container, applying dark mode immediately if active
   const cardContainer = document.createElement('div');
-  cardContainer.className = 'musashi-card-container';
+  const isDark = detectTwitterTheme() === 'dark';
+  cardContainer.className = isDark
+    ? 'musashi-card-container musashi-dark'
+    : 'musashi-card-container';
 
   // Insert AFTER the tweet text (like Twitter's link previews)
   if (insertionPoint.nextSibling) {

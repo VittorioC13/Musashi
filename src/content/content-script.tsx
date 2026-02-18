@@ -5,7 +5,7 @@
 import { TwitterExtractor, Tweet } from './twitter-extractor';
 import { KeywordMatcher } from '../analysis/keyword-matcher';
 import { MarketMatch, Market } from '../types/market';
-import { injectTwitterCard, hasTwitterCard } from './inject-twitter-card';
+import { injectTwitterCard, hasTwitterCard, detectTwitterTheme, applyThemeToAllCards } from './inject-twitter-card';
 import '../sidebar/sidebar.css';
 
 console.log('[Musashi] Content script loaded');
@@ -86,6 +86,18 @@ if (!isTwitter) {
 
   const extractor = new TwitterExtractor();
   let allMatches: MarketMatch[] = [];
+
+  // Watch for Twitter theme changes (user toggling Dim / Lights Out / Default mid-session)
+  let lastTheme = detectTwitterTheme();
+  const themeObserver = new MutationObserver(() => {
+    const theme = detectTwitterTheme();
+    if (theme !== lastTheme) {
+      lastTheme = theme;
+      applyThemeToAllCards(theme);
+    }
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+  themeObserver.observe(document.body,            { attributes: true, attributeFilter: ['class', 'style'] });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeMusashi);

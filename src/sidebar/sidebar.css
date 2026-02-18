@@ -352,6 +352,51 @@
 }
 
 /* ==============================================
+   DARK MODE
+   Twitter has three themes: Default (white), Dim (#15202B), Lights Out (#000).
+   The .musashi-dark class is applied by JS when body luminance is below 100.
+   ============================================== */
+
+/* Card shell */
+.musashi-dark .twitter-native-card {
+  background: #16181c !important;
+  border-color: #2f3336 !important;
+}
+.musashi-dark .twitter-native-card:hover {
+  background: #1c1f23 !important;
+  border-color: #3b4046 !important;
+}
+
+/* Primary text — market title */
+.musashi-dark .text-gray-900 { color: #e7e9ea !important; }
+/* Gray number (non-winning side) */
+.musashi-dark .text-gray-700 { color: #b9c0c7 !important; }
+/* Labels: "Yes" / "No" / platform / "Prediction Market" */
+.musashi-dark .text-gray-500 { color: #71767b !important; }
+/* Muted metadata: % match, resolve date, volume */
+.musashi-dark .text-gray-400 { color: #536471 !important; }
+/* Separator dot between footer items */
+.musashi-dark .text-gray-300 { color: #3b4046 !important; }
+
+/* Vertical divider line between YES and NO */
+.musashi-dark .bg-gray-200   { background-color: #2f3336 !important; }
+
+/* YES winning — lighter green for dark background */
+.musashi-dark .text-green-600 { color: #34d399 !important; }
+/* NO winning — lighter red for dark background */
+.musashi-dark .text-red-600   { color: #f87171 !important; }
+
+/* 24h change pill — positive */
+.musashi-dark .text-green-700 { color: #34d399 !important; }
+.musashi-dark .bg-green-50    { background-color: rgba(52, 211, 153, 0.15) !important; }
+/* 24h change pill — negative */
+.musashi-dark .text-red-700   { color: #f87171 !important; }
+.musashi-dark .bg-red-50      { background-color: rgba(248, 113, 113, 0.15) !important; }
+
+/* Probability bar track */
+.musashi-dark .musashi-prob-bar { background: rgba(255, 255, 255, 0.1) !important; }
+
+/* ==============================================
    PROBABILITY BAR
    ============================================== */
 
