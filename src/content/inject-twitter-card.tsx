@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import TwitterNativeCard from '../sidebar/TwitterNativeCard';
 import { MarketMatch } from '../types/market';
@@ -30,12 +30,68 @@ export function applyThemeToAllCards(theme: 'dark' | 'light'): void {
 }
 
 /**
+ * Renders the primary market card plus an expandable list of secondary matches.
+ * The expand button lives outside the <a> tag so it doesn't trigger navigation.
+ */
+const MarketCardGroup: React.FC<{
+  primary:   MarketMatch;
+  secondary: MarketMatch[];
+  onMount:   (marketId: string, numericId: string) => void;
+  onUnmount: (marketId: string) => void;
+}> = ({ primary, secondary, onMount, onUnmount }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div>
+      {/* Primary — always visible */}
+      <TwitterNativeCard
+        market={primary.market}
+        confidence={primary.confidence}
+        onMount={() => { if (primary.market.numericId) onMount(primary.market.id, primary.market.numericId); }}
+        onUnmount={() => onUnmount(primary.market.id)}
+      />
+
+      {secondary.length > 0 && (
+        <>
+          {/* Expand trigger */}
+          <button
+            className="musashi-expand-btn"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setExpanded(v => !v); }}
+          >
+            {expanded
+              ? 'show less'
+              : `+ ${secondary.length} more market${secondary.length > 1 ? 's' : ''}`}
+          </button>
+
+          {/* Secondary cards — grid-based smooth expand */}
+          <div className={`musashi-secondary-cards${expanded ? ' musashi-secondary-expanded' : ''}`}>
+            <div>
+              {secondary.map(m => (
+                <div key={m.market.id} className="musashi-secondary-item">
+                  <TwitterNativeCard
+                    market={m.market}
+                    confidence={m.confidence}
+                    onMount={() => { if (m.market.numericId) onMount(m.market.id, m.market.numericId); }}
+                    onUnmount={() => onUnmount(m.market.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+/**
  * Inject Twitter-native market card inline within tweet
  * Appears below tweet text, like Twitter's native link previews
  */
 export function injectTwitterCard(
   tweetElement: HTMLElement,
-  match: MarketMatch
+  match: MarketMatch,
+  secondaryMatches: MarketMatch[] = []
 ): void {
   // Check if already injected
   if (injectedTweets.has(tweetElement)) {
@@ -75,21 +131,15 @@ export function injectTwitterCard(
     insertionPoint.parentElement?.appendChild(cardContainer);
   }
 
-  const { market, confidence } = match;
-
-  // Render the card, wiring register/unregister for live price polling
+  // Render the group (primary + optional expandable secondary cards)
   const root = ReactDOM.createRoot(cardContainer);
   root.render(
     <React.StrictMode>
-      <TwitterNativeCard
-        market={market}
-        confidence={confidence}
-        onMount={() => {
-          if (market.numericId) {
-            registerCard(market.id, market.numericId);
-          }
-        }}
-        onUnmount={() => unregisterCard(market.id)}
+      <MarketCardGroup
+        primary={match}
+        secondary={secondaryMatches}
+        onMount={registerCard}
+        onUnmount={unregisterCard}
       />
     </React.StrictMode>
   );
@@ -97,7 +147,8 @@ export function injectTwitterCard(
   // Track injection
   injectedTweets.set(tweetElement, { container: cardContainer, root });
 
-  console.log('[Musashi] Injected Twitter-native card for:', market.title);
+  const extra = secondaryMatches.length > 0 ? ` (+${secondaryMatches.length} secondary)` : '';
+  console.log(`[Musashi] Injected card for: ${match.market.title}${extra}`);
 }
 
 /**

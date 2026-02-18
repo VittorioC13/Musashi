@@ -128,10 +128,11 @@ if (!isTwitter) {
           if (matches.length > 0) {
             const best = matches[0];
             console.log(
-              `[Musashi] MATCH ${(best.confidence * 100).toFixed(0)}% — "${best.market.title}"`
+              `[Musashi] MATCH ${(best.confidence * 100).toFixed(0)}% — "${best.market.title}"` +
+              (matches.length > 1 ? ` (+${matches.length - 1} secondary)` : '')
             );
             if (!hasTwitterCard(tweet.element)) {
-              injectTwitterCard(tweet.element, best);
+              injectTwitterCard(tweet.element, best, matches.slice(1, 3));
               injected++;
             }
             allMatches.push(...matches);
