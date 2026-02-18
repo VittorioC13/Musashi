@@ -1,7 +1,7 @@
-// Auto-generates keywords from a Kalshi market title.
-// Kalshi markets don't ship with a keywords array, so we derive one
-// by tokenizing the title, building bigrams/trigrams, and expanding
-// through the same SYNONYM_MAP the matcher uses.
+// Generates market keywords from title + description.
+// Uses unigrams only (no bigram noise) plus SYNONYM_MAP forward expansion.
+// Including the description means company names, tickers, and context words
+// appear as keywords without needing hand-coded SYNONYM_MAP entries.
 
 import { SYNONYM_MAP } from '../analysis/keyword-matcher';
 
@@ -14,11 +14,24 @@ const TITLE_STOPS = new Set([
   'their', 'any', 'all', 'into', 'out', 'up', 'down', 'as', 'from',
   'with', 'this', 'that', 'not', 'new', 'more', 'than', 'most', 'least',
   'how', 'what', 'when', 'where', 'who', 'get', 'got', 'put', 'set',
-  'per', 'via', 'vs', 'vs.',
+  'per', 'via', 'vs', 'vs.', 'than', 'if', 'whether', 'close', 'below',
+  'least', 'value', 'level', 'least', 'each', 'such', 'also', 'still',
+  'next', 'last', 'first', 'time', 'market', 'price', 'would',
 ]);
 
-/** Generate unigrams + bigrams + trigrams from a string */
-function tokenize(text: string): string[] {
+/** Extract unigrams from a text string, applying stop-word filtering */
+function extractUnigrams(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s'&$]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(w => w.length > 2 && !TITLE_STOPS.has(w));
+}
+
+/** Extract bigrams + trigrams that are keys in SYNONYM_MAP */
+function extractSynonymPhrases(text: string): string[] {
   const words = text
     .toLowerCase()
     .replace(/[^a-z0-9\s'&]/g, ' ')
@@ -27,48 +40,57 @@ function tokenize(text: string): string[] {
     .split(' ')
     .filter(w => w.length > 0);
 
-  const tokens: string[] = [...words];
+  const phrases: string[] = [];
   for (let i = 0; i < words.length - 1; i++) {
-    tokens.push(words[i] + ' ' + words[i + 1]);
+    const bigram = words[i] + ' ' + words[i + 1];
+    if (SYNONYM_MAP[bigram]) phrases.push(bigram);
+    if (i < words.length - 2) {
+      const trigram = words[i] + ' ' + words[i + 1] + ' ' + words[i + 2];
+      if (SYNONYM_MAP[trigram]) phrases.push(trigram);
+    }
   }
-  for (let i = 0; i < words.length - 2; i++) {
-    tokens.push(words[i] + ' ' + words[i + 1] + ' ' + words[i + 2]);
-  }
-  return tokens;
+  return phrases;
 }
 
 /**
- * Given a market title, returns a keyword array suitable for KeywordMatcher.
+ * Generates market keywords from title and optional description.
  *
  * Strategy:
- * 1. Tokenize title into unigrams/bigrams/trigrams
- * 2. Filter stop words from single tokens
- * 3. For each token, look up in SYNONYM_MAP and add all synonyms
- * 4. Also do a reverse lookup: if a token matches any SYNONYM_MAP value,
- *    add the corresponding key (so "fed" in title → adds "jerome powell" etc.)
+ * 1. Extract unigrams from title (stop-word filtered) — no bigram noise
+ * 2. Extract bigrams/trigrams from title ONLY if they are SYNONYM_MAP keys
+ * 3. Apply SYNONYM_MAP forward expansion for all tokens found
+ * 4. Extract unigrams from first 400 chars of description — this is where
+ *    company full names, tickers, and context live (e.g. "Palantir Technologies (PLTR)")
+ *    giving us both variants without hardcoding them
  * 5. Deduplicate and return
  */
-export function generateKeywords(title: string): string[] {
-  const allTokens = tokenize(title);
+export function generateKeywords(title: string, description?: string): string[] {
   const keywords = new Set<string>();
 
-  for (const token of allTokens) {
-    const isPhrase = token.includes(' ');
-
-    // For single words, apply stop-word filter
-    if (!isPhrase) {
-      if (token.length <= 2 || TITLE_STOPS.has(token)) continue;
-    } else {
-      // For phrases, only skip very short ones
-      if (token.length <= 4) continue;
-    }
-
+  // ── Title: unigrams ──────────────────────────────────────────────────────
+  const titleUnigrams = extractUnigrams(title);
+  for (const token of titleUnigrams) {
     keywords.add(token);
+    const syns = SYNONYM_MAP[token];
+    if (syns) syns.forEach(s => keywords.add(s));
+  }
 
-    // Forward lookup: token is a key in SYNONYM_MAP
-    const forwardSyns = SYNONYM_MAP[token];
-    if (forwardSyns) {
-      for (const s of forwardSyns) keywords.add(s);
+  // ── Title: known multi-word aliases (bigrams/trigrams in SYNONYM_MAP) ───
+  for (const phrase of extractSynonymPhrases(title)) {
+    keywords.add(phrase);
+    const syns = SYNONYM_MAP[phrase];
+    if (syns) syns.forEach(s => keywords.add(s));
+  }
+
+  // ── Description: unigrams from first 400 chars ──────────────────────────
+  // The description typically names the company ("Palantir Technologies"),
+  // includes the ticker ("PLTR"), and provides context not in the title.
+  if (description) {
+    const descUnigrams = extractUnigrams(description.slice(0, 400));
+    for (const token of descUnigrams) {
+      keywords.add(token);
+      const syns = SYNONYM_MAP[token];
+      if (syns) syns.forEach(s => keywords.add(s));
     }
   }
 

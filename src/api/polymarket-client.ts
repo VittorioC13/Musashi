@@ -127,7 +127,7 @@ function toMarket(pm: PolymarketMarket): Market {
     platform: 'polymarket',
     title: pm.question,
     description: pm.description ?? '',
-    keywords: generateKeywords(pm.question),
+    keywords: generateKeywords(pm.question, pm.description),
     yesPrice: +safeYes.toFixed(2),
     noPrice: safeNo,
     volume24h: pm.volume24hr ?? 0,

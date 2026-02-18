@@ -512,7 +512,6 @@ export class KeywordMatcher {
 
     for (const mk of explicitKeywords) {
       if (expandedTokenSet.has(mk)) {
-        // Determine if matched directly or via synonym
         if (rawTokenSet.has(mk)) {
           exactMatches++;
         } else {
@@ -522,28 +521,16 @@ export class KeywordMatcher {
       } else if (mk.includes(' ') && hasWordBoundaryMatch(
         Array.from(expandedTokenSet).join(' '), mk
       )) {
-        // Multi-word market keyword matched a phrase in expanded tokens
+        // Multi-word SYNONYM_MAP key matched a phrase in expanded tokens
         synonymMatches++;
         matchedKeywords.push(mk);
-      }
-    }
-
-    // Title tokens: additional signal, weighted lower, skip if already in keywords
-    const explicitSet = new Set(explicitKeywords);
-    const titleTokens = extractTitleTokens(market.title);
-    let titleMatches  = 0;
-
-    for (const tt of titleTokens) {
-      if (!explicitSet.has(tt) && expandedTokenSet.has(tt)) {
-        titleMatches++;
-        // Don't add to matchedKeywords display — these are implicit
       }
     }
 
     const confidence = computeScore({
       exactMatches,
       synonymMatches,
-      titleMatches,
+      titleMatches: 0,
       totalChecked: explicitKeywords.length,
     });
 
