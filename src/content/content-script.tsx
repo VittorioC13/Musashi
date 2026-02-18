@@ -38,37 +38,23 @@ async function pollPrices(): Promise<void> {
   if (numericIds.length === 0) return;
 
   try {
-    const params = numericIds.map(id => `id=${encodeURIComponent(id)}`).join('&');
-    const resp = await fetch(`https://gamma-api.polymarket.com/markets?${params}`);
-    if (!resp.ok) return;
+    // Delegate fetch to service worker — content scripts are blocked by x.com CSP
+    const response = await new Promise<{ prices: Record<string, { yes: number; no: number; oneDayPriceChange: number }> }>(
+      (resolve) => {
+        chrome.runtime.sendMessage({ type: 'POLL_PRICES', numericIds }, (res) => {
+          if (chrome.runtime.lastError) {
+            console.warn('[Musashi] POLL_PRICES SW error:', chrome.runtime.lastError.message);
+            resolve({ prices: {} });
+            return;
+          }
+          resolve(res ?? { prices: {} });
+        });
+      }
+    );
 
-    const data: Array<{
-      id: string;
-      outcomePrices: string;
-      outcomes: string;
-      oneDayPriceChange?: number;
-    }> = await resp.json();
+    const priceByNumericId = response.prices;
 
-    if (!Array.isArray(data)) return;
-
-    // Build numericId → prices map
-    const priceByNumericId: Record<string, { yes: number; no: number; oneDayPriceChange: number }> = {};
-    for (const m of data) {
-      try {
-        const prices: string[] = JSON.parse(m.outcomePrices);
-        const outcomes: string[] = JSON.parse(m.outcomes);
-        const yesIdx = outcomes.findIndex(o => o.toLowerCase() === 'yes');
-        if (yesIdx === -1 || !prices[yesIdx]) continue;
-        const yes = Math.min(Math.max(parseFloat(prices[yesIdx]), 0.01), 0.99);
-        priceByNumericId[m.id] = {
-          yes: +yes.toFixed(2),
-          no: +(1 - yes).toFixed(2),
-          oneDayPriceChange: m.oneDayPriceChange ?? 0,
-        };
-      } catch { /* skip malformed */ }
-    }
-
-    // Reverse-map to marketId and dispatch
+    // Reverse-map numericId → marketId and dispatch
     const marketIdPriceMap: Record<string, { yes: number; no: number; oneDayPriceChange: number }> = {};
     for (const [marketId, numericId] of activeCards.entries()) {
       if (priceByNumericId[numericId]) {

@@ -43,6 +43,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // keep channel open for async
   }
 
+  // Content script asks SW to poll live prices (avoids X.com CSP blocking direct fetch)
+  if (message.type === 'POLL_PRICES') {
+    const numericIds: string[] = message.numericIds ?? [];
+    if (numericIds.length === 0) { sendResponse({ prices: {} }); return true; }
+
+    const params = numericIds.map((id: string) => `id=${encodeURIComponent(id)}`).join('&');
+    fetch(`https://gamma-api.polymarket.com/markets?${params}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data: Array<{ id: string; outcomePrices: string; outcomes: string; oneDayPriceChange?: number }>) => {
+        const prices: Record<string, { yes: number; no: number; oneDayPriceChange: number }> = {};
+        for (const m of data) {
+          try {
+            const outcomePrices: string[] = JSON.parse(m.outcomePrices);
+            const outcomes: string[] = JSON.parse(m.outcomes);
+            const yesIdx = outcomes.findIndex((o: string) => o.toLowerCase() === 'yes');
+            if (yesIdx === -1 || !outcomePrices[yesIdx]) continue;
+            const yes = Math.min(Math.max(parseFloat(outcomePrices[yesIdx]), 0.01), 0.99);
+            prices[m.id] = {
+              yes: +yes.toFixed(2),
+              no: +(1 - yes).toFixed(2),
+              oneDayPriceChange: m.oneDayPriceChange ?? 0,
+            };
+          } catch { /* skip malformed */ }
+        }
+        sendResponse({ prices });
+      })
+      .catch((e) => {
+        console.error('[Musashi SW] POLL_PRICES fetch failed:', e);
+        sendResponse({ prices: {} });
+      });
+    return true; // keep channel open for async
+  }
+
   // Badge update from content script
   if (message.type === 'UPDATE_BADGE') {
     const count = message.count || 0;
