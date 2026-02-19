@@ -21,6 +21,7 @@ const TITLE_STOPS = new Set([
   // market-specific signal when seen in isolation (e.g. "world" in a
   // FIFA World Cup title would create a spurious keyword that matches
   // tweets mentioning "the world" in an unrelated context).
+  // "man city" / "man united" are handled via SYNONYM_MAP bigrams instead.
   'world', 'cup', 'game', 'games', 'live', 'work', 'way', 'show', 'back',
   'know', 'good', 'big', 'take', 'top', 'open', 'run', 'real', 'right',
   'mean', 'only', 'even', 'well', 'off', 'look', 'find', 'going', 'come',
@@ -28,6 +29,7 @@ const TITLE_STOPS = new Set([
   'give', 'once', 'ever', 'much', 'many', 'other', 'every', 'again',
   'move', 'play', 'long', 'high', 'side', 'line', 'lead', 'role', 'hold',
   'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
+  'man', 'men', 'city', 'united', 'new', 'old', 'final', 'league',
 ]);
 
 /** Extract unigrams from a text string, applying stop-word filtering */

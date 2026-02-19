@@ -16,6 +16,7 @@ const STOP_WORDS = new Set([
   'just', 'so', 'than', 'too', 'very', 'not', 'no', 'yes',
   // Generic everyday words that are too ambiguous to be matching signals.
   // e.g. "sharing them with the world" must not match FIFA World Cup markets.
+  // e.g. "this man just keeps..." must not match "Man City" markets.
   'world', 'cup', 'game', 'games', 'live', 'work', 'way', 'show', 'back',
   'know', 'good', 'big', 'take', 'top', 'open', 'run', 'real', 'right',
   'mean', 'only', 'even', 'well', 'off', 'look', 'find', 'going', 'come',
@@ -23,6 +24,8 @@ const STOP_WORDS = new Set([
   'give', 'once', 'ever', 'much', 'many', 'other', 'every', 'again',
   'move', 'play', 'long', 'high', 'side', 'line', 'lead', 'role', 'hold',
   'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
+  // Pronouns / generic nouns that form compound sport names but are noise alone
+  'man', 'men', 'city', 'united', 'new', 'old', 'final', 'league',
 ]);
 
 // Domain-specific noise words that appear in nearly every financial/political tweet
@@ -218,6 +221,28 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'march madness':    ['ncaa', 'basketball'],
   'world cup':        ['soccer', 'football', 'fifa'],
   'fifa':             ['soccer', 'world cup'],
+  'champions league': ['soccer', 'football', 'europe', 'uefa', 'ucl'],
+  'ucl':              ['champions league', 'soccer', 'europe', 'uefa'],
+  'europa league':    ['soccer', 'football', 'europe', 'uefa'],
+  'premier league':   ['soccer', 'football', 'england', 'epl'],
+  'epl':              ['premier league', 'soccer', 'england'],
+  'la liga':          ['soccer', 'football', 'spain'],
+  'serie a':          ['soccer', 'football', 'italy'],
+  'bundesliga':       ['soccer', 'football', 'germany'],
+  'man city':         ['manchester city', 'soccer', 'premier league', 'champions league'],
+  'man united':       ['manchester united', 'soccer', 'premier league'],
+  'manchester city':  ['man city', 'soccer', 'premier league', 'champions league'],
+  'manchester united':['man united', 'soccer', 'premier league'],
+  'arsenal':          ['soccer', 'premier league', 'england'],
+  'liverpool':        ['soccer', 'premier league', 'england'],
+  'chelsea':          ['soccer', 'premier league', 'england'],
+  'tottenham':        ['soccer', 'premier league', 'spurs'],
+  'real madrid':      ['soccer', 'la liga', 'champions league'],
+  'barcelona':        ['soccer', 'la liga', 'spain'],
+  'psg':              ['paris saint germain', 'soccer', 'france'],
+  'inter milan':      ['soccer', 'serie a', 'italy'],
+  'fa cup':           ['soccer', 'england', 'football'],
+  'ufc':              ['mma', 'fighting', 'sports'],
   'mahomes':          ['chiefs', 'kansas city', 'nfl', 'super bowl'],
   'patrick mahomes':  ['chiefs', 'kansas city', 'nfl', 'super bowl'],
   'celtics':          ['boston', 'nba', 'basketball'],
@@ -586,6 +611,7 @@ function extractTitleTokens(title: string): string[] {
     'give', 'once', 'ever', 'much', 'many', 'other', 'every', 'again',
     'move', 'play', 'long', 'high', 'side', 'line', 'lead', 'role', 'hold',
     'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
+    'man', 'men', 'city', 'united', 'new', 'old', 'final', 'league',
   ]);
   return title
     .toLowerCase()
