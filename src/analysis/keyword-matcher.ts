@@ -412,6 +412,32 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'qualcomm':         ['semiconductors', 'chips', 'mobile'],
   'arm':              ['semiconductors', 'chips'],
 
+  // ── Nvidia chip architectures & products ─────────────────────────────────
+  'jensen':           ['jensen huang', 'nvidia', 'nvda', 'gpu'],
+  'blackwell':        ['nvidia', 'nvda', 'gpu', 'ai chips'],
+  'hopper':           ['nvidia', 'nvda', 'gpu', 'h100'],
+  'h100':             ['nvidia', 'nvda', 'gpu', 'ai chips'],
+  'h200':             ['nvidia', 'nvda', 'gpu', 'ai chips'],
+  'b100':             ['nvidia', 'nvda', 'gpu', 'blackwell'],
+  'b200':             ['nvidia', 'nvda', 'gpu', 'blackwell'],
+  'gb200':            ['nvidia', 'nvda', 'blackwell', 'gpu'],
+  'nvlink':           ['nvidia', 'nvda', 'gpu'],
+  'cuda':             ['nvidia', 'nvda', 'gpu'],
+  'data center':      ['nvidia', 'ai', 'semiconductors', 'chips'],
+  'new chips':        ['nvidia', 'semiconductors', 'gpu', 'ai chips'],
+  'ai chip':          ['nvidia', 'nvda', 'gpu', 'semiconductors'],
+  'ai chips':         ['nvidia', 'nvda', 'gpu', 'semiconductors'],
+  'chip ban':         ['semiconductors', 'nvidia', 'china', 'export controls'],
+  'export controls':  ['semiconductors', 'nvidia', 'china', 'chips'],
+  'foundry':          ['semiconductors', 'tsmc', 'chips'],
+  // New AI model releases
+  'claude 4':         ['anthropic', 'ai', 'claude', 'llm'],
+  'claude 3':         ['anthropic', 'ai', 'claude', 'llm'],
+  'gpt 5':            ['openai', 'chatgpt', 'ai', 'llm'],
+  'gpt-5':            ['openai', 'chatgpt', 'ai', 'llm'],
+  'reasoning model':  ['ai', 'openai', 'anthropic', 'llm'],
+  'inference':        ['ai', 'llm', 'nvidia', 'data center'],
+
   // ── Macro / Global economy ────────────────────────────────────────────────
   'ecb':              ['european central bank', 'euro', 'interest rates'],
   'european central bank': ['ecb', 'euro', 'interest rates'],

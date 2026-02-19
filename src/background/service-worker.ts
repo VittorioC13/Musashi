@@ -1,11 +1,13 @@
 // Musashi Service Worker
-// Fetches Polymarket markets (bypasses CORS) and stores them in chrome.storage.
+// Fetches Polymarket + Kalshi markets (bypasses CORS) and stores them in chrome.storage.
 // Content script reads from storage — no large-payload message passing needed.
 
 import { fetchPolymarkets } from '../api/polymarket-client';
+import { fetchKalshiMarkets } from '../api/kalshi-client';
 
-const STORAGE_KEY_MARKETS = 'polymarkets_v1';
-const STORAGE_KEY_TS      = 'polymarketsTs_v1';
+// v2 key — invalidates the old Polymarket-only cache so combined data is fetched fresh
+const STORAGE_KEY_MARKETS = 'markets_v2';
+const STORAGE_KEY_TS      = 'marketsTs_v2';
 const CACHE_TTL_MS        = 30 * 60 * 1000; // 30 minutes
 
 console.log('[Musashi SW] Service worker initialized');
@@ -33,7 +35,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       // Fetch fresh
-      console.log('[Musashi SW] Fetching fresh markets from Polymarket...');
+      console.log('[Musashi SW] Fetching fresh markets from Polymarket + Kalshi...');
       const fresh = await refreshMarkets();
       sendResponse({ markets: fresh });
     }).catch((e) => {
@@ -102,7 +104,35 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 async function refreshMarkets() {
   try {
-    const markets = await fetchPolymarkets(500, 10);
+    // Fetch both sources in parallel; if one fails the other still contributes
+    const [polyResult, kalshiResult] = await Promise.allSettled([
+      fetchPolymarkets(500, 10),
+      fetchKalshiMarkets(200, 10),
+    ]);
+
+    const polyMarkets  = polyResult.status   === 'fulfilled' ? polyResult.value   : [];
+    const kalshiMarkets = kalshiResult.status === 'fulfilled' ? kalshiResult.value : [];
+
+    if (polyResult.status === 'rejected') {
+      console.warn('[Musashi SW] Polymarket fetch failed:', polyResult.reason);
+    }
+    if (kalshiResult.status === 'rejected') {
+      console.warn('[Musashi SW] Kalshi fetch failed:', kalshiResult.reason);
+    }
+
+    // Merge; dedup by id just in case
+    const seen = new Set<string>();
+    const markets = [...polyMarkets, ...kalshiMarkets].filter(m => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+
+    console.log(
+      `[Musashi SW] Fetched ${polyMarkets.length} Polymarket + ` +
+      `${kalshiMarkets.length} Kalshi = ${markets.length} total markets`
+    );
+
     if (markets.length > 0) {
       await chrome.storage.local.set({
         [STORAGE_KEY_MARKETS]: markets,
