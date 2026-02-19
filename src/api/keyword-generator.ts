@@ -17,6 +17,17 @@ const TITLE_STOPS = new Set([
   'per', 'via', 'vs', 'vs.', 'than', 'if', 'whether', 'close', 'below',
   'least', 'value', 'level', 'least', 'each', 'such', 'also', 'still',
   'next', 'last', 'first', 'time', 'market', 'price', 'would',
+  // Generic English words that appear in everyday speech but carry no
+  // market-specific signal when seen in isolation (e.g. "world" in a
+  // FIFA World Cup title would create a spurious keyword that matches
+  // tweets mentioning "the world" in an unrelated context).
+  'world', 'cup', 'game', 'games', 'live', 'work', 'way', 'show', 'back',
+  'know', 'good', 'big', 'take', 'top', 'open', 'run', 'real', 'right',
+  'mean', 'only', 'even', 'well', 'off', 'look', 'find', 'going', 'come',
+  'make', 'made', 'day', 'days', 'part', 'true', 'keep', 'left', 'try',
+  'give', 'once', 'ever', 'much', 'many', 'other', 'every', 'again',
+  'move', 'play', 'long', 'high', 'side', 'line', 'lead', 'role', 'hold',
+  'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
 ]);
 
 /** Extract unigrams from a text string, applying stop-word filtering */

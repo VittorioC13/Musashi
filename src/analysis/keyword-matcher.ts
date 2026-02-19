@@ -14,6 +14,15 @@ const STOP_WORDS = new Set([
   'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'them',
   'their', 'what', 'which', 'who', 'when', 'where', 'why', 'how', 'all',
   'just', 'so', 'than', 'too', 'very', 'not', 'no', 'yes',
+  // Generic everyday words that are too ambiguous to be matching signals.
+  // e.g. "sharing them with the world" must not match FIFA World Cup markets.
+  'world', 'cup', 'game', 'games', 'live', 'work', 'way', 'show', 'back',
+  'know', 'good', 'big', 'take', 'top', 'open', 'run', 'real', 'right',
+  'mean', 'only', 'even', 'well', 'off', 'look', 'find', 'going', 'come',
+  'make', 'made', 'day', 'days', 'part', 'true', 'keep', 'left', 'try',
+  'give', 'once', 'ever', 'much', 'many', 'other', 'every', 'again',
+  'move', 'play', 'long', 'high', 'side', 'line', 'lead', 'role', 'hold',
+  'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
 ]);
 
 // Domain-specific noise words that appear in nearly every financial/political tweet
@@ -544,6 +553,13 @@ function extractTitleTokens(title: string): string[] {
     'end', 'yes', 'no', 'than', 'over', 'under', 'above', 'below', 'hit',
     'reach', 'win', 'lose', 'pass', 'major', 'us', 'use', 'its', 'their',
     'any', 'all', 'into', 'out', 'up', 'down',
+    'world', 'cup', 'game', 'games', 'live', 'work', 'way', 'show', 'back',
+    'know', 'good', 'big', 'take', 'top', 'open', 'run', 'real', 'right',
+    'mean', 'only', 'even', 'well', 'off', 'look', 'find', 'going', 'come',
+    'make', 'made', 'day', 'days', 'part', 'true', 'keep', 'left', 'try',
+    'give', 'once', 'ever', 'much', 'many', 'other', 'every', 'again',
+    'move', 'play', 'long', 'high', 'side', 'line', 'lead', 'role', 'hold',
+    'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
   ]);
   return title
     .toLowerCase()
@@ -581,8 +597,15 @@ function computeScore(r: MatchCounts): number {
   const denominator = Math.min(r.totalChecked, DENOMINATOR_CAP);
   const normalized = weighted / denominator;
 
-  // Small coverage bonus for matching multiple distinct keywords
   const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
+
+  // Single-match guard: one keyword hit on a market with 4+ keywords (normalized
+  // < 0.25) is not a reliable signal. Blocks e.g. "world" in a random tweet
+  // matching FIFA World Cup markets that have many keywords. Markets with ≤3
+  // focused keywords still produce normalized ≥ 0.33 and pass through.
+  if (totalMatched === 1 && normalized < 0.25) return 0;
+
+  // Small coverage bonus for matching multiple distinct keywords
   const coverageBonus = Math.min(0.2, (totalMatched - 1) * 0.05);
 
   return Math.min(1.0, normalized + (totalMatched > 0 ? coverageBonus : 0));
