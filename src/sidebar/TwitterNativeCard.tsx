@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Market } from '../types/market';
+import { analyzeSentiment } from '../analysis/sentiment-analyzer';
 
 interface TwitterNativeCardProps {
   market: Market;
   confidence: number;
+  tweetText?: string;
   onMount?: () => void;
   onUnmount?: () => void;
 }
@@ -19,6 +21,7 @@ type PriceFlash = 'up' | 'down' | null;
 const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
   market,
   confidence,
+  tweetText,
   onMount,
   onUnmount,
 }) => {
@@ -29,6 +32,11 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
   const [noFlash,  setNoFlash]  = useState<PriceFlash>(null);
   const [barWidth, setBarWidth] = useState(0); // starts at 0 for entry animation
   const prevYes = useRef(market.yesPrice);
+
+  // Analyze sentiment from tweet text
+  const sentiment = React.useMemo(() => {
+    return tweetText ? analyzeSentiment(tweetText) : null;
+  }, [tweetText]);
 
   // Register/unregister with polling orchestrator
   useEffect(() => {
@@ -119,6 +127,22 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
           <span className="text-xs text-gray-500 font-normal">
             {market.platform === 'polymarket' ? 'Polymarket' : 'Kalshi'}
           </span>
+          {sentiment && sentiment.confidence > 0 && (
+            <>
+              <span className="text-xs text-gray-400">•</span>
+              <div
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor:
+                    sentiment.sentiment === 'bullish' ? '#10B981' :
+                    sentiment.sentiment === 'bearish' ? '#EF4444' :
+                    '#94A3B8',
+                  opacity: 0.6 + (sentiment.confidence * 0.4)
+                }}
+                title={`Sentiment: ${sentiment.sentiment} (${Math.round(sentiment.confidence * 100)}%)`}
+              />
+            </>
+          )}
         </div>
         <span className="text-xs text-gray-400">{Math.round(confidence * 100)}% match</span>
       </div>

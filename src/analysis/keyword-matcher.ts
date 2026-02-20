@@ -38,6 +38,14 @@ const DOMAIN_NOISE_WORDS = new Set([
   'soon', 'today', 'tomorrow', 'week', 'month', 'year',
   'thread', 'breaking', 'update', 'report', 'says', 'said',
   'now', 'latest',
+  // Additional noise words that cause false positives
+  'people', 'thing', 'things', 'time', 'times', 'news', 'new',
+  'next', 'last', 'first', 'second', 'third', 'another', 'some',
+  'here', 'there', 'think', 'thought', 'thoughts', 'post', 'tweet',
+  'twitter', 'follow', 'share', 'read', 'watch', 'check', 'via',
+  'amp', 'quote', 'retweet', 'reply', 'comment', 'comments',
+  'video', 'photo', 'image', 'link', 'article', 'story',
+  'must', 'need', 'want', 'lol', 'lmao', 'wtf', 'omg', 'tbh',
 ]);
 
 // ─── Synonym / alias map ─────────────────────────────────────────────────────
@@ -633,6 +641,7 @@ interface MatchCounts {
   synonymMatches: number; // tweet token matched via synonym expansion
   titleMatches:   number; // tweet token matches market title word (not in keywords[])
   totalChecked:   number; // number of market keywords evaluated
+  multiWordMatches: number; // number of phrase matches (bonus for specificity)
 }
 
 function computeScore(r: MatchCounts): number {
@@ -641,8 +650,8 @@ function computeScore(r: MatchCounts): number {
   // Weighted sum: exact > synonym > title
   const weighted =
     r.exactMatches   * 1.0 +
-    r.synonymMatches * 0.6 +
-    r.titleMatches   * 0.3;
+    r.synonymMatches * 0.5 +  // Reduced from 0.6 to reduce weak synonym matches
+    r.titleMatches   * 0.15;   // Reduced from 0.3 to reduce title noise
 
   // Normalize by keyword list length, capped to avoid penalizing markets
   // that happen to have many keywords from description extraction.
@@ -651,16 +660,30 @@ function computeScore(r: MatchCounts): number {
 
   const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
 
-  // Single-match guard: one keyword hit on a market with 4+ keywords (normalized
-  // < 0.25) is not a reliable signal. Blocks e.g. "world" in a random tweet
-  // matching FIFA World Cup markets that have many keywords. Markets with ≤3
-  // focused keywords still produce normalized ≥ 0.33 and pass through.
-  if (totalMatched === 1 && normalized < 0.25) return 0;
+  // STRICT FILTERING: Require at least 2 matches for confidence
+  // Exception: single exact match with normalized ≥ 0.4 (very specific markets)
+  if (totalMatched === 1) {
+    // Only allow single matches if:
+    // 1. It's an exact match (not synonym/title)
+    // 2. Normalized score is very high (≥ 0.4, meaning market has ≤2 focused keywords)
+    if (r.exactMatches === 0 || normalized < 0.4) {
+      return 0;
+    }
+  }
+
+  // If only title matches (no exact or synonym), require at least 3 title words
+  if (r.exactMatches === 0 && r.synonymMatches === 0 && r.titleMatches < 3) {
+    return 0;
+  }
 
   // Small coverage bonus for matching multiple distinct keywords
   const coverageBonus = Math.min(0.2, (totalMatched - 1) * 0.05);
 
-  return Math.min(1.0, normalized + (totalMatched > 0 ? coverageBonus : 0));
+  // Phrase bonus: multi-word matches are much more specific than single words
+  // Each phrase match adds 0.1 confidence (capped at 0.3)
+  const phraseBonus = Math.min(0.3, r.multiWordMatches * 0.1);
+
+  return Math.min(1.0, normalized + (totalMatched > 0 ? coverageBonus : 0) + phraseBonus);
 }
 
 // ─── KeywordMatcher class ────────────────────────────────────────────────────
@@ -672,7 +695,7 @@ export class KeywordMatcher {
 
   constructor(
     markets: Market[] = mockMarkets,
-    minConfidence: number = 0.12,
+    minConfidence: number = 0.22, // Raised from 0.12 to reduce false positives
     maxResults: number = 5
   ) {
     this.markets = markets;
@@ -684,6 +707,9 @@ export class KeywordMatcher {
    * Match a tweet to relevant markets, returning results sorted by confidence.
    */
   public match(tweetText: string): MarketMatch[] {
+    // Filter out very short tweets (likely noise or greetings)
+    if (tweetText.trim().length < 20) return [];
+
     // Step 1: Extract raw tokens (unigrams + bigrams + trigrams) from tweet
     const rawTokens = this.extractKeywords(tweetText);
     if (rawTokens.length === 0) return [];
@@ -756,23 +782,36 @@ export class KeywordMatcher {
     let exactMatches   = 0;
     let synonymMatches = 0;
     let titleMatches   = 0;
+    let multiWordMatches = 0; // Track phrase matches for prioritization
 
     const explicitKeywords = market.keywords.map(k => k.toLowerCase());
 
+    // PRIORITY 1: Multi-word phrases (most specific)
     for (const mk of explicitKeywords) {
-      if (expandedTokenSet.has(mk)) {
-        if (rawTokenSet.has(mk)) {
+      if (mk.includes(' ')) {
+        if (hasWordBoundaryMatch(Array.from(rawTokenSet).join(' '), mk)) {
           exactMatches++;
-        } else {
+          multiWordMatches++;
+          matchedKeywords.push(mk);
+        } else if (hasWordBoundaryMatch(Array.from(expandedTokenSet).join(' '), mk)) {
           synonymMatches++;
+          multiWordMatches++;
+          matchedKeywords.push(mk);
         }
-        matchedKeywords.push(mk);
-      } else if (mk.includes(' ') && hasWordBoundaryMatch(
-        Array.from(expandedTokenSet).join(' '), mk
-      )) {
-        // Multi-word SYNONYM_MAP key matched a phrase in expanded tokens
-        synonymMatches++;
-        matchedKeywords.push(mk);
+      }
+    }
+
+    // PRIORITY 2: Single-word exact/synonym matches
+    for (const mk of explicitKeywords) {
+      if (!mk.includes(' ') && !matchedKeywords.includes(mk)) {
+        if (expandedTokenSet.has(mk)) {
+          if (rawTokenSet.has(mk)) {
+            exactMatches++;
+          } else {
+            synonymMatches++;
+          }
+          matchedKeywords.push(mk);
+        }
       }
     }
 
@@ -792,6 +831,7 @@ export class KeywordMatcher {
       synonymMatches,
       titleMatches,
       totalChecked: explicitKeywords.length,
+      multiWordMatches,
     });
 
     return { market, confidence, matchedKeywords };

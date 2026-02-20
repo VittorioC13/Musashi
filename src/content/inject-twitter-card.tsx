@@ -36,9 +36,10 @@ export function applyThemeToAllCards(theme: 'dark' | 'light'): void {
 const MarketCardGroup: React.FC<{
   primary:   MarketMatch;
   secondary: MarketMatch[];
+  tweetText: string;
   onMount:   (marketId: string, numericId: string) => void;
   onUnmount: (marketId: string) => void;
-}> = ({ primary, secondary, onMount, onUnmount }) => {
+}> = ({ primary, secondary, tweetText, onMount, onUnmount }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -47,6 +48,7 @@ const MarketCardGroup: React.FC<{
       <TwitterNativeCard
         market={primary.market}
         confidence={primary.confidence}
+        tweetText={tweetText}
         onMount={() => { if (primary.market.numericId) onMount(primary.market.id, primary.market.numericId); }}
         onUnmount={() => onUnmount(primary.market.id)}
       />
@@ -71,6 +73,7 @@ const MarketCardGroup: React.FC<{
                   <TwitterNativeCard
                     market={m.market}
                     confidence={m.confidence}
+                    tweetText={tweetText}
                     onMount={() => { if (m.market.numericId) onMount(m.market.id, m.market.numericId); }}
                     onUnmount={() => onUnmount(m.market.id)}
                   />
@@ -91,6 +94,7 @@ const MarketCardGroup: React.FC<{
 export function injectTwitterCard(
   tweetElement: HTMLElement,
   match: MarketMatch,
+  tweetText: string,
   secondaryMatches: MarketMatch[] = []
 ): void {
   // Check if already injected
@@ -138,6 +142,7 @@ export function injectTwitterCard(
       <MarketCardGroup
         primary={match}
         secondary={secondaryMatches}
+        tweetText={tweetText}
         onMount={registerCard}
         onUnmount={unregisterCard}
       />
@@ -156,7 +161,8 @@ export function injectTwitterCard(
  */
 export function updateTwitterCard(
   tweetElement: HTMLElement,
-  match: MarketMatch
+  match: MarketMatch,
+  tweetText: string
 ): void {
   const existing = injectedTweets.get(tweetElement);
 
@@ -167,6 +173,7 @@ export function updateTwitterCard(
         <TwitterNativeCard
           market={market}
           confidence={confidence}
+          tweetText={tweetText}
           onMount={() => {
             if (market.numericId) {
               registerCard(market.id, market.numericId);
@@ -177,7 +184,7 @@ export function updateTwitterCard(
       </React.StrictMode>
     );
   } else {
-    injectTwitterCard(tweetElement, match);
+    injectTwitterCard(tweetElement, match, tweetText);
   }
 }
 

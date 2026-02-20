@@ -115,7 +115,7 @@ if (!isTwitter) {
     }
 
     console.log(`[Musashi] ${markets.length} markets loaded. Starting tweet scanner...`);
-    const matcher = new KeywordMatcher(markets, 0.12, 5);
+    const matcher = new KeywordMatcher(markets, 0.22, 5); // Raised from 0.12 to 0.22 for better accuracy
 
     setTimeout(() => {
       extractor.start((tweets: Tweet[]) => {
@@ -132,7 +132,7 @@ if (!isTwitter) {
               (matches.length > 1 ? ` (+${matches.length - 1} secondary)` : '')
             );
             if (!hasTwitterCard(tweet.element)) {
-              injectTwitterCard(tweet.element, best, matches.slice(1, 3));
+              injectTwitterCard(tweet.element, best, tweet.text, matches.slice(1, 3));
               injected++;
             }
             allMatches.push(...matches);
