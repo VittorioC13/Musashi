@@ -143,6 +143,9 @@ export function injectTwitterCard(
   // Track injection
   injectedTweets.set(tweetElement, { container: cardContainer, root });
 
+  // Mark the tweet element so we can detect it even after DOM re-renders
+  tweetElement.setAttribute('data-musashi-injected', 'true');
+
   const extra = secondaryMatches.length > 0 ? ` (+${secondaryMatches.length} secondary)` : '';
   console.log(`[Musashi] Injected card for: ${match.market.title}${extra}`);
 }
@@ -211,5 +214,20 @@ export function removeAllTwitterCards(): void {
  * Check if tweet has card
  */
 export function hasTwitterCard(tweetElement: HTMLElement): boolean {
-  return injectedTweets.has(tweetElement);
+  // Check if element is marked as injected
+  if (tweetElement.hasAttribute('data-musashi-injected')) {
+    // Verify the card container is still in the DOM
+    const existing = injectedTweets.get(tweetElement);
+    if (existing && existing.container.isConnected) {
+      return true;
+    }
+  }
+
+  // Check if we have an active injection for this element
+  const existing = injectedTweets.get(tweetElement);
+  if (existing && existing.container.isConnected) {
+    return true;
+  }
+
+  return false;
 }

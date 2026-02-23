@@ -60,6 +60,12 @@ if (!isTwitter) {
         let injected = 0;
 
         tweets.forEach((tweet) => {
+          // Always check if card exists, even for "processed" tweets
+          // This handles Twitter re-rendering the DOM when expanding tweets
+          if (hasTwitterCard(tweet.element)) {
+            return; // Card already exists, skip
+          }
+
           const matches = matcher.match(tweet.text);
 
           if (matches.length > 0) {
@@ -68,10 +74,8 @@ if (!isTwitter) {
               `[Musashi] MATCH ${(best.confidence * 100).toFixed(0)}% — "${best.market.title}"` +
               (matches.length > 1 ? ` (+${matches.length - 1} secondary)` : '')
             );
-            if (!hasTwitterCard(tweet.element)) {
-              injectTwitterCard(tweet.element, best, tweet.text, matches.slice(1, 3));
-              injected++;
-            }
+            injectTwitterCard(tweet.element, best, tweet.text, matches.slice(1, 3));
+            injected++;
             allMatches.push(...matches);
           }
         });

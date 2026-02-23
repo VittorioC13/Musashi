@@ -130,7 +130,9 @@ export class TwitterExtractor {
 
     for (const element of elementsToProcess) {
       const tweet = this.extractTweetData(element);
-      if (tweet && !this.processedTweets.has(tweet.id)) {
+      if (tweet) {
+        // Always process tweets - the injection logic will check if card exists
+        // This handles Twitter re-rendering tweets when expanding/collapsing
         tweets.push(tweet);
         this.processedTweets.add(tweet.id);
       }
