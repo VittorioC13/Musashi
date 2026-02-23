@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import TwitterNativeCard from '../sidebar/TwitterNativeCard';
 import { MarketMatch } from '../types/market';
-import { registerCard, unregisterCard } from './content-script';
 
 // Track which tweets have cards injected
 const injectedTweets = new Map<HTMLElement, { container: HTMLElement; root: ReactDOM.Root }>();
@@ -37,9 +36,7 @@ const MarketCardGroup: React.FC<{
   primary:   MarketMatch;
   secondary: MarketMatch[];
   tweetText: string;
-  onMount:   (marketId: string, numericId: string) => void;
-  onUnmount: (marketId: string) => void;
-}> = ({ primary, secondary, tweetText, onMount, onUnmount }) => {
+}> = ({ primary, secondary, tweetText }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -49,8 +46,6 @@ const MarketCardGroup: React.FC<{
         market={primary.market}
         confidence={primary.confidence}
         tweetText={tweetText}
-        onMount={() => { if (primary.market.numericId) onMount(primary.market.id, primary.market.numericId); }}
-        onUnmount={() => onUnmount(primary.market.id)}
       />
 
       {secondary.length > 0 && (
@@ -74,8 +69,6 @@ const MarketCardGroup: React.FC<{
                     market={m.market}
                     confidence={m.confidence}
                     tweetText={tweetText}
-                    onMount={() => { if (m.market.numericId) onMount(m.market.id, m.market.numericId); }}
-                    onUnmount={() => onUnmount(m.market.id)}
                   />
                 </div>
               ))}
@@ -143,8 +136,6 @@ export function injectTwitterCard(
         primary={match}
         secondary={secondaryMatches}
         tweetText={tweetText}
-        onMount={registerCard}
-        onUnmount={unregisterCard}
       />
     </React.StrictMode>
   );
@@ -174,12 +165,6 @@ export function updateTwitterCard(
           market={market}
           confidence={confidence}
           tweetText={tweetText}
-          onMount={() => {
-            if (market.numericId) {
-              registerCard(market.id, market.numericId);
-            }
-          }}
-          onUnmount={() => unregisterCard(market.id)}
         />
       </React.StrictMode>
     );

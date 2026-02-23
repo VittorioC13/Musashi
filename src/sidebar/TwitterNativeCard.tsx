@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Market } from '../types/market';
 import { analyzeSentiment } from '../analysis/sentiment-analyzer';
 
@@ -6,43 +6,19 @@ interface TwitterNativeCardProps {
   market: Market;
   confidence: number;
   tweetText?: string;
-  onMount?: () => void;
-  onUnmount?: () => void;
 }
-
-interface PriceUpdate {
-  yes: number;
-  no: number;
-  oneDayPriceChange: number;
-}
-
-type PriceFlash = 'up' | 'down' | null;
 
 const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
   market,
   confidence,
   tweetText,
-  onMount,
-  onUnmount,
 }) => {
-  const [liveYes, setLiveYes] = useState(market.yesPrice);
-  const [liveNo, setLiveNo]   = useState(market.noPrice);
-  const [dayChange, setDayChange] = useState(market.oneDayPriceChange ?? 0);
-  const [yesFlash, setYesFlash] = useState<PriceFlash>(null);
-  const [noFlash,  setNoFlash]  = useState<PriceFlash>(null);
   const [barWidth, setBarWidth] = useState(0); // starts at 0 for entry animation
-  const prevYes = useRef(market.yesPrice);
 
   // Analyze sentiment from tweet text
   const sentiment = React.useMemo(() => {
     return tweetText ? analyzeSentiment(tweetText) : null;
   }, [tweetText]);
-
-  // Register/unregister with polling orchestrator
-  useEffect(() => {
-    onMount?.();
-    return () => onUnmount?.();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Entry animation: give the DOM one frame to render width:0, then transition to actual value
   useEffect(() => {
@@ -50,37 +26,10 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Subscribe to live price updates dispatched by content-script polling
-  useEffect(() => {
-    function handlePriceUpdate(e: Event) {
-      const detail = (e as CustomEvent<Record<string, PriceUpdate>>).detail;
-      const update = detail[market.id];
-      if (!update) return;
-
-      const direction: PriceFlash = update.yes > prevYes.current ? 'up'
-        : update.yes < prevYes.current ? 'down'
-        : null;
-
-      if (direction) {
-        setYesFlash(direction);
-        setNoFlash(direction === 'up' ? 'down' : 'up');
-        setTimeout(() => { setYesFlash(null); setNoFlash(null); }, 1000);
-      }
-
-      prevYes.current = update.yes;
-      setLiveYes(update.yes);
-      setLiveNo(update.no);
-      setDayChange(update.oneDayPriceChange);
-      setBarWidth(Math.round(update.yes * 100));
-    }
-
-    window.addEventListener('musashi-price-update', handlePriceUpdate);
-    return () => window.removeEventListener('musashi-price-update', handlePriceUpdate);
-  }, [market.id]);
-
-  const yesPercent = Math.round(liveYes * 100);
-  const noPercent  = Math.round(liveNo  * 100);
-  const isYesWinning = liveYes >= 0.5;
+  const yesPercent = Math.round(market.yesPrice * 100);
+  const noPercent  = Math.round(market.noPrice  * 100);
+  const isYesWinning = market.yesPrice >= 0.5;
+  const dayChange = market.oneDayPriceChange ?? 0;
 
   // Format end date: "2026-03-31" → "Mar 31"
   const endDateLabel = React.useMemo(() => {
@@ -155,13 +104,9 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
       {/* Odds Display */}
       <div className="flex items-center gap-4 mb-2">
         {/* YES */}
-        <div className={`flex items-center gap-2 px-2 py-0.5 rounded-md transition-colors duration-300 ${
-          yesFlash === 'up'   ? 'musashi-flash-up'
-          : yesFlash === 'down' ? 'musashi-flash-down'
-          : ''
-        }`}>
+        <div className="flex items-center gap-2 px-2 py-0.5 rounded-md">
           <span className="text-xs text-gray-500 uppercase tracking-wide">Yes</span>
-          <span className={`text-lg font-semibold transition-all duration-300 ${isYesWinning ? 'text-green-600' : 'text-gray-700'}`}>
+          <span className={`text-lg font-semibold ${isYesWinning ? 'text-green-600' : 'text-gray-700'}`}>
             {yesPercent}%
           </span>
           {isYesWinning && (
@@ -175,13 +120,9 @@ const TwitterNativeCard: React.FC<TwitterNativeCardProps> = ({
         <div className="w-px h-6 bg-gray-200"></div>
 
         {/* NO */}
-        <div className={`flex items-center gap-2 px-2 py-0.5 rounded-md transition-colors duration-300 ${
-          noFlash === 'up'   ? 'musashi-flash-up'
-          : noFlash === 'down' ? 'musashi-flash-down'
-          : ''
-        }`}>
+        <div className="flex items-center gap-2 px-2 py-0.5 rounded-md">
           <span className="text-xs text-gray-500 uppercase tracking-wide">No</span>
-          <span className={`text-lg font-semibold transition-all duration-300 ${!isYesWinning ? 'text-red-600' : 'text-gray-700'}`}>
+          <span className={`text-lg font-semibold ${!isYesWinning ? 'text-red-600' : 'text-gray-700'}`}>
             {noPercent}%
           </span>
           {!isYesWinning && (

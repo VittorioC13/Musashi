@@ -10,69 +10,6 @@ import '../sidebar/sidebar.css';
 
 console.log('[Musashi] Content script loaded');
 
-// ── Live price polling ────────────────────────────────────────────────────────
-// Module-level so registerCard/unregisterCard can be imported by inject-twitter-card.
-
-const activeCards = new Map<string, string>(); // marketId → numericId
-let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-export function registerCard(marketId: string, numericId: string): void {
-  activeCards.set(marketId, numericId);
-  if (pollInterval === null) {
-    pollInterval = setInterval(pollPrices, 30_000);
-  }
-}
-
-export function unregisterCard(marketId: string): void {
-  activeCards.delete(marketId);
-  if (activeCards.size === 0 && pollInterval !== null) {
-    clearInterval(pollInterval);
-    pollInterval = null;
-  }
-}
-
-async function pollPrices(): Promise<void> {
-  if (activeCards.size === 0) return;
-
-  const numericIds = Array.from(activeCards.values()).filter(Boolean);
-  if (numericIds.length === 0) return;
-
-  try {
-    // Delegate fetch to service worker — content scripts are blocked by x.com CSP
-    const response = await new Promise<{ prices: Record<string, { yes: number; no: number; oneDayPriceChange: number }> }>(
-      (resolve) => {
-        chrome.runtime.sendMessage({ type: 'POLL_PRICES', numericIds }, (res) => {
-          if (chrome.runtime.lastError) {
-            console.warn('[Musashi] POLL_PRICES SW error:', chrome.runtime.lastError.message);
-            resolve({ prices: {} });
-            return;
-          }
-          resolve(res ?? { prices: {} });
-        });
-      }
-    );
-
-    const priceByNumericId = response.prices;
-
-    // Reverse-map numericId → marketId and dispatch
-    const marketIdPriceMap: Record<string, { yes: number; no: number; oneDayPriceChange: number }> = {};
-    for (const [marketId, numericId] of activeCards.entries()) {
-      if (priceByNumericId[numericId]) {
-        marketIdPriceMap[marketId] = priceByNumericId[numericId];
-      }
-    }
-
-    if (Object.keys(marketIdPriceMap).length > 0) {
-      window.dispatchEvent(
-        new CustomEvent('musashi-price-update', { detail: marketIdPriceMap })
-      );
-      console.log(`[Musashi] Polled ${Object.keys(marketIdPriceMap).length} market price(s)`);
-    }
-  } catch (e) {
-    console.warn('[Musashi] Price poll failed:', e);
-  }
-}
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const isTwitter =
