@@ -67,8 +67,8 @@ function isSimpleMarket(km: KalshiMarket): boolean {
  * Stops when we reach `targetSimpleCount` simple markets or exhaust `maxPages`.
  */
 export async function fetchKalshiMarkets(
-  targetSimpleCount = 150,
-  maxPages = 8,
+  targetSimpleCount = 400,
+  maxPages = 15,
 ): Promise<Market[]> {
   const PAGE_SIZE = 200;
   const allSimple: Market[] = [];

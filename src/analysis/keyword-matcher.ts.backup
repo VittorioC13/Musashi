@@ -638,80 +638,6 @@ export const SYNONYM_MAP: Record<string, string[]> = {
   'animated':         ['animation', 'cartoon'],
   'pixar':            ['animation', 'disney', 'animated film'],
   'dreamworks':       ['animation', 'animated film'],
-  // ── Gaming (expanded coverage) ────────────────────────────────────────────
-  'gta': ['gta 6', 'grand theft auto', 'rockstar', 'gaming'],
-  'gta 6': ['gta', 'grand theft auto', 'rockstar', 'gaming', 'video game'],
-  'gta vi': ['gta 6', 'gta', 'grand theft auto', 'rockstar'],
-  'grand theft auto': ['gta', 'gta 6', 'rockstar', 'gaming'],
-  'rockstar': ['gta', 'gta 6', 'gaming', 'take two'],
-  'take two': ['rockstar', 'gta', 'gaming'],
-  'elden ring': ['fromsoftware', 'souls', 'gaming', 'rpg', 'dlc'],
-  'fromsoftware': ['elden ring', 'dark souls', 'gaming', 'souls'],
-  'souls': ['elden ring', 'dark souls', 'fromsoftware', 'gaming'],
-  'dark souls': ['fromsoftware', 'souls', 'elden ring', 'gaming'],
-  'league of legends': ['lol', 'riot games', 'esports', 'moba', 'gaming'],
-  'lol': ['league of legends', 'esports', 'riot games', 'gaming'],
-  'riot games': ['league of legends', 'valorant', 'gaming', 'esports'],
-  'faker': ['league of legends', 'lol', 't1', 'esports'],
-  't1': ['league of legends', 'faker', 'esports', 'korea'],
-  'valorant': ['riot games', 'fps', 'esports', 'gaming', 'tac shooter'],
-  'sentinels': ['valorant', 'esports', 'tenz', 'gaming'],
-  'tenz': ['sentinels', 'valorant', 'esports'],
-  'nintendo': ['switch', 'switch 2', 'gaming', 'console', 'zelda', 'mario'],
-  'switch': ['nintendo', 'switch 2', 'gaming', 'console'],
-  'switch 2': ['nintendo', 'switch', 'gaming', 'console', 'next gen'],
-  'zelda': ['nintendo', 'switch', 'gaming', 'tears of the kingdom'],
-  'mario': ['nintendo', 'switch', 'gaming', 'super mario'],
-  'pokemon': ['nintendo', 'switch', 'gaming', 'game freak'],
-  'minecraft': ['mojang', 'microsoft', 'sandbox', 'gaming', 'video game'],
-  'mojang': ['minecraft', 'microsoft', 'gaming'],
-  'hollow knight': ['silksong', 'indie game', 'metroidvania', 'team cherry'],
-  'silksong': ['hollow knight', 'indie game', 'metroidvania', 'gaming'],
-  'indie game': ['gaming', 'indie', 'video game'],
-  'esports': ['gaming', 'competitive', 'tournament', 'league'],
-  'gaming': ['video game', 'esports', 'gamer', 'console'],
-  'gamer': ['gaming', 'video game', 'esports'],
-  'console': ['gaming', 'playstation', 'xbox', 'nintendo'],
-  'playstation': ['ps5', 'sony', 'gaming', 'console'],
-  'ps5': ['playstation', 'sony', 'gaming', 'console'],
-  'xbox': ['microsoft', 'gaming', 'console'],
-  // ── Music (expanded coverage) ─────────────────────────────────────────────
-  'taylor swift': ['music', 'pop', 'swifties', 'eras tour', 'album'],
-  'swifties': ['taylor swift', 'music', 'fandom'],
-  'eras tour': ['taylor swift', 'tour', 'concert', 'music'],
-  'beyonce': ['music', 'pop', 'renaissance', 'tour', 'beyoncé'],
-  'beyoncé': ['beyonce', 'music', 'pop'],
-  'renaissance': ['beyonce', 'music', 'album'],
-  'the weeknd': ['music', 'pop', 'r&b', 'abel tesfaye'],
-  'abel tesfaye': ['the weeknd', 'music'],
-  'coachella': ['music festival', 'festival', 'music', 'concert'],
-  'music festival': ['coachella', 'concert', 'music', 'tour'],
-  'festival': ['music festival', 'concert', 'music'],
-  'sabrina carpenter': ['music', 'pop', 'singer', 'espresso'],
-  'espresso': ['sabrina carpenter', 'music', 'song'],
-  'ye': ['kanye west', 'kanye', 'music', 'rap', 'hip hop'],
-  'concert': ['music', 'tour', 'live music', 'show'],
-  'tour': ['concert', 'music', 'live music'],
-  'album': ['music', 'release', 'new album'],
-  'single': ['music', 'song', 'release'],
-  'collaboration': ['music', 'collab', 'feature'],
-  'collab': ['collaboration', 'music', 'feature'],
-  // ── Social Media & Streaming ──────────────────────────────────────────────
-  'kick': ['streaming', 'xqc', 'stake', 'content creator'],
-  'pokimane': ['twitch', 'streaming', 'content creator', 'offlinetv'],
-  'xqc': ['twitch', 'kick', 'streaming', 'streamer', 'content creator'],
-  'mcdonalds': ['fast food', 'breakfast', 'restaurant', 'mcdonald'],
-  'mcdonald': ['mcdonalds', 'fast food'],
-  'starbucks': ['coffee', 'sbux', 'cafe', 'union'],
-  'sbux': ['starbucks', 'coffee'],
-  'fast food': ['mcdonalds', 'burger king', 'wendys', 'restaurant'],
-  'restaurant': ['fast food', 'dining', 'food'],
-  'shein': ['fast fashion', 'ecommerce', 'fashion', 'retail'],
-  'balenciaga': ['fashion', 'luxury', 'brand', 'designer'],
-  'met gala': ['fashion', 'vogue', 'anna wintour', 'red carpet'],
-  'reddit': ['social media', 'rddt', 'stock', 'wallstreetbets'],
-  'wallstreetbets': ['reddit', 'wsb', 'stocks', 'meme stock'],
-  'wsb': ['wallstreetbets', 'reddit', 'stocks'],
 };
 
 // ─── Utility functions ───────────────────────────────────────────────────────
@@ -811,146 +737,6 @@ function extractTitleTokens(title: string): string[] {
 // (20-40 keywords from description extraction) don't get artificially low scores.
 // Without this cap, a perfect bitcoin+btc+crypto match on a 25-keyword market
 // scores 2.2/25 = 0.088 — below threshold despite being a strong signal.
-
-
-// ─── Promotional/Spam Content Detection ──────────────────────────────────────
-
-const PROMOTIONAL_PATTERNS = [
-  // Financial scams / trading promotions
-  /\$\d+k.*pass.*test/i,           // "$100K if you pass test"
-  /won't give you.*we will/i,      // "Your bank won't give you, we will"
-  /no deposits.*profits/i,         // "No deposits, keep profits"
-  /worst case.*lose.*fee/i,        // "Worst case you lose the entry fee"
-  /free \$\d+/i,                    // "Free $500"
-  /claim.*\$\d+/i,                  // "Claim your $100"
-  /limited.*offer/i,                // "Limited time offer"
-  /click.*link.*bio/i,              // "Click link in bio"
-  /dm.*for.*more/i,                 // "DM me for more info"
-  /join.*discord/i,                 // Promotional Discord links
-  /airdrop/i,                       // Crypto airdrops
-  /whitelist/i,                     // NFT/crypto whitelists
-  /presale/i,                       // Token presales
-  /guaranteed.*profit/i,            // "Guaranteed profits"
-  /risk[- ]free/i,                  // "Risk-free trading"
-];
-
-/**
- * Detect if a tweet is promotional/spam content
- * Returns true if tweet matches promotional patterns
- */
-function isPromotionalContent(text: string): boolean {
-  const normalized = text.toLowerCase();
-
-  // Check against known promotional patterns
-  for (const pattern of PROMOTIONAL_PATTERNS) {
-    if (pattern.test(text)) {
-      return true;
-    }
-  }
-
-  // Excessive emoji usage (often in spam)
-  const emojiCount = (text.match(/[\uD800-\uDFFF]/g) || []).length;
-  if (emojiCount > 15 && text.length < 200) {
-    return true; // More than 15 emoji chars in a short tweet is suspicious
-  }
-
-  // Multiple dollar amounts with no context (often scams)
-  const dollarMatches = text.match(/\$\d+[KMB]?/gi);
-  if (dollarMatches && dollarMatches.length >= 3) {
-    // 3+ different dollar amounts mentioned = likely promotional
-    return true;
-  }
-
-  return false;
-}
-
-// ─── Category coherence detection ───────────────────────────────────────────
-
-// Category-related term clusters for coherence detection
-const CATEGORY_CLUSTERS: Record<string, Set<string>> = {
-  gaming: new Set(['gaming', 'video game', 'console', 'esports', 'pc', 'steam', 'playstation', 'xbox', 'nintendo', 'switch', 'gta', 'minecraft', 'valorant']),
-  crypto: new Set(['crypto', 'cryptocurrency', 'bitcoin', 'ethereum', 'btc', 'eth', 'blockchain', 'defi', 'web3', 'solana', 'nft']),
-  music: new Set(['music', 'album', 'tour', 'concert', 'artist', 'song', 'single', 'spotify', 'streaming music', 'coachella', 'festival']),
-  tech: new Set(['tech', 'technology', 'ai', 'software', 'startup', 'silicon valley', 'coding', 'developer', 'nvidia', 'openai']),
-  sports: new Set(['sports', 'team', 'championship', 'playoff', 'season', 'athlete', 'coach', 'league', 'nfl', 'nba']),
-  politics: new Set(['politics', 'election', 'congress', 'president', 'senate', 'house', 'vote', 'bill', 'policy']),
-  finance: new Set(['stock', 'stocks', 'market', 'trading', 'wall street', 'ipo', 'shares', 'investor']),
-};
-
-/**
- * Detects category coherence - gives bonus when tweet contains multiple related terms
- * from the same category, indicating strong topical focus
- */
-function getCategoryCoherenceBonus(matchedKeywords: string[], marketCategory: string): number {
-  for (const [category, terms] of Object.entries(CATEGORY_CLUSTERS)) {
-    const matchedInCategory = matchedKeywords.filter(kw => terms.has(kw.toLowerCase())).length;
-
-    // If we have 3+ terms from same category, strong signal
-    if (matchedInCategory >= 3) {
-      // Extra boost if market category aligns
-      return marketCategory === category ? 0.15 : 0.1;
-    }
-    // 2 terms from same category is moderate signal
-    if (matchedInCategory === 2) {
-      return marketCategory === category ? 0.08 : 0.05;
-    }
-  }
-  return 0;
-}
-
-/**
- * Recency boost - markets ending soon are more relevant
- */
-function getRecencyBoost(market: Market): number {
-  if (!market.endDate) return 0;
-
-  try {
-    const endDate = new Date(market.endDate);
-    const now = new Date();
-    const daysUntilEnd = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-
-    // Markets ending within 30 days get a small boost
-    if (daysUntilEnd > 0 && daysUntilEnd <= 30) {
-      return 0.05;
-    }
-    // Markets ending within 7 days get bigger boost
-    if (daysUntilEnd > 0 && daysUntilEnd <= 7) {
-      return 0.1;
-    }
-  } catch (e) {
-    // Invalid date, no boost
-  }
-  return 0;
-}
-
-/**
- * Numeric context detection
- * Helps match price targets, dates, percentages mentioned in tweets
- */
-function extractNumericContexts(text: string): Set<string> {
-  const contexts = new Set<string>();
-
-  // Price targets: $100, $50K, $1M, etc.
-  const priceMatches = text.matchAll(/\$(\d+(?:,\d{3})*(?:\.\d+)?[KMB]?)/gi);
-  for (const match of priceMatches) {
-    contexts.add(`price:${match[1].toLowerCase()}`);
-  }
-
-  // Percentages: 5%, 10%, etc.
-  const percentMatches = text.matchAll(/(\d+(?:\.\d+)?)%/g);
-  for (const match of percentMatches) {
-    contexts.add(`percent:${match[1]}`);
-  }
-
-  // Years: 2024-2029, etc.
-  const yearMatches = text.matchAll(/\b(202[4-9])\b/g);
-  for (const match of yearMatches) {
-    contexts.add(`year:${match[1]}`);
-  }
-
-  return contexts;
-}
-
 const DENOMINATOR_CAP = 5;
 
 interface MatchCounts {
@@ -961,7 +747,7 @@ interface MatchCounts {
   multiWordMatches: number; // number of phrase matches (bonus for specificity)
 }
 
-function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[]): number {
+function computeScore(r: MatchCounts): number {
   if (r.totalChecked === 0) return 0;
 
   // Weighted sum: exact > synonym > title
@@ -1000,13 +786,7 @@ function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[])
   // Each phrase match adds 0.1 confidence (capped at 0.3)
   const phraseBonus = Math.min(0.3, r.multiWordMatches * 0.1);
 
-  // Category coherence bonus
-  const coherenceBonus = getCategoryCoherenceBonus(matchedKeywords, market.category || '');
-
-  // Recency boost
-  const recencyBoost = getRecencyBoost(market);
-
-  return Math.min(1.0, normalized + (totalMatched > 0 ? coverageBonus : 0) + phraseBonus + coherenceBonus + recencyBoost);
+  return Math.min(1.0, normalized + (totalMatched > 0 ? coverageBonus : 0) + phraseBonus);
 }
 
 // ─── KeywordMatcher class ────────────────────────────────────────────────────
@@ -1155,7 +935,7 @@ export class KeywordMatcher {
       titleMatches,
       totalChecked: explicitKeywords.length,
       multiWordMatches,
-    }, market, matchedKeywords);
+    });
 
     return { market, confidence, matchedKeywords };
   }

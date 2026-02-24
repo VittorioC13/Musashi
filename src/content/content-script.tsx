@@ -52,7 +52,7 @@ if (!isTwitter) {
     }
 
     console.log(`[Musashi] ${markets.length} markets loaded. Starting tweet scanner...`);
-    const matcher = new KeywordMatcher(markets, 0.22, 5); // Raised from 0.12 to 0.22 for better accuracy
+    const matcher = new KeywordMatcher(markets, 0.30, 5); // Raised from 0.22 to 0.30 to filter weak matches
 
     setTimeout(() => {
       extractor.start((tweets: Tweet[]) => {

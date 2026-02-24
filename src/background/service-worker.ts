@@ -73,8 +73,8 @@ async function refreshMarkets() {
   try {
     // Fetch both sources in parallel; if one fails the other still contributes
     const [polyResult, kalshiResult] = await Promise.allSettled([
-      fetchPolymarkets(500, 10),
-      fetchKalshiMarkets(200, 10),
+      fetchPolymarkets(1000, 15),
+      fetchKalshiMarkets(400, 15),
     ]);
 
     const polyMarkets  = polyResult.status   === 'fulfilled' ? polyResult.value   : [];
