@@ -46,6 +46,12 @@ const DOMAIN_NOISE_WORDS = new Set([
   'amp', 'quote', 'retweet', 'reply', 'comment', 'comments',
   'video', 'photo', 'image', 'link', 'article', 'story',
   'must', 'need', 'want', 'lol', 'lmao', 'wtf', 'omg', 'tbh',
+  // Common action/state words that appear across all contexts
+  'changed', 'change', 'changes', 'changing', 'hard', 'number',
+  'basically', 'specifically', 'communicate', 'usual', 'gradually',
+  'asterisks', 'before', 'after', 'months', 'years', 'december',
+  'january', 'february', 'march', 'april', 'may', 'june', 'july',
+  'august', 'september', 'october', 'november',
 ]);
 
 // ─── Synonym / alias map ─────────────────────────────────────────────────────
@@ -988,8 +994,15 @@ function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[])
     }
   }
 
-  // If only title matches (no exact or synonym), require at least 3 title words
-  if (r.exactMatches === 0 && r.synonymMatches === 0 && r.titleMatches < 3) {
+  // MUCH STRICTER: Require at least 2 exact matches OR 3+ total matches
+  // This prevents weak synonym/title-only matches
+  if (r.exactMatches < 2 && totalMatched < 3) {
+    return 0;
+  }
+
+  // If only title matches (no exact or synonym), require at least 4 title words
+  // Increased from 3 to be more strict
+  if (r.exactMatches === 0 && r.synonymMatches === 0 && r.titleMatches < 4) {
     return 0;
   }
 
