@@ -26,12 +26,6 @@ const STOP_WORDS = new Set([
   'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
   // Pronouns / generic nouns that form compound sport names but are noise alone
   'man', 'men', 'city', 'united', 'new', 'old', 'final', 'league',
-  // Numbers and quantifiers that appear everywhere
-  'one', 'two', 'three', 'four', 'five', 'ten', 'hundred', 'thousand',
-  // Generic verbs and states
-  'got', 'get', 'gets', 'getting', 'went', 'go', 'going', 'came', 'come',
-  'joined', 'join', 'forgot', 'forget', 'understand', 'understood',
-  'addicted', 'randomly', 'random',
 ]);
 
 // Domain-specific noise words that appear in nearly every financial/political tweet
@@ -52,12 +46,10 @@ const DOMAIN_NOISE_WORDS = new Set([
   'amp', 'quote', 'retweet', 'reply', 'comment', 'comments',
   'video', 'photo', 'image', 'link', 'article', 'story',
   'must', 'need', 'want', 'lol', 'lmao', 'wtf', 'omg', 'tbh',
-  // Common action/state words that appear across all contexts
-  'changed', 'change', 'changes', 'changing', 'hard', 'number',
-  'basically', 'specifically', 'communicate', 'usual', 'gradually',
-  'asterisks', 'before', 'after', 'months', 'years', 'december',
-  'january', 'february', 'march', 'april', 'may', 'june', 'july',
-  'august', 'september', 'october', 'november',
+  // Generic numbers/quantifiers that match everywhere
+  'one', 'two', 'three', 'four', 'five',
+  // Ultra-generic verbs that appear in every context
+  'got', 'get', 'came', 'come', 'went', 'join', 'joined',
 ]);
 
 // ─── Synonym / alias map ─────────────────────────────────────────────────────
@@ -989,15 +981,23 @@ function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[])
 
   const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
 
-  // NUCLEAR OPTION: Require at least 2 EXACT keyword matches, period.
-  // No exceptions, no title-only matches, no synonym-only matches.
-  // This completely prevents false positives from weak semantic drift.
-  if (r.exactMatches < 2) {
-    return 0;
-  }
+  // BALANCED FILTERING: Strong but not nuclear
+  // Require EITHER:
+  // - 1+ exact match AND 2+ total matches (exact + synonym/title)
+  // - OR 2+ synonym matches AND 3+ total matches
 
-  // Additional safety: require at least 3 total matches for confidence
-  if (totalMatched < 3) {
+  if (r.exactMatches >= 1) {
+    // If we have at least 1 exact match, require 2+ total matches
+    if (totalMatched < 2) {
+      return 0;
+    }
+  } else if (r.synonymMatches >= 2) {
+    // If no exact matches, need 2+ synonym matches AND 3+ total
+    if (totalMatched < 3) {
+      return 0;
+    }
+  } else {
+    // No exact matches and <2 synonym matches = reject
     return 0;
   }
 
