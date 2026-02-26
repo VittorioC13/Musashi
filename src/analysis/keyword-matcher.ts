@@ -26,6 +26,12 @@ const STOP_WORDS = new Set([
   'plan', 'place', 'start', 'see', 'say', 'said', 'goes',
   // Pronouns / generic nouns that form compound sport names but are noise alone
   'man', 'men', 'city', 'united', 'new', 'old', 'final', 'league',
+  // Numbers and quantifiers that appear everywhere
+  'one', 'two', 'three', 'four', 'five', 'ten', 'hundred', 'thousand',
+  // Generic verbs and states
+  'got', 'get', 'gets', 'getting', 'went', 'go', 'going', 'came', 'come',
+  'joined', 'join', 'forgot', 'forget', 'understand', 'understood',
+  'addicted', 'randomly', 'random',
 ]);
 
 // Domain-specific noise words that appear in nearly every financial/political tweet
@@ -983,26 +989,15 @@ function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[])
 
   const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
 
-  // STRICT FILTERING: Require at least 2 matches for confidence
-  // Exception: single exact match with normalized ≥ 0.4 (very specific markets)
-  if (totalMatched === 1) {
-    // Only allow single matches if:
-    // 1. It's an exact match (not synonym/title)
-    // 2. Normalized score is very high (≥ 0.4, meaning market has ≤2 focused keywords)
-    if (r.exactMatches === 0 || normalized < 0.4) {
-      return 0;
-    }
-  }
-
-  // MUCH STRICTER: Require at least 2 exact matches OR 3+ total matches
-  // This prevents weak synonym/title-only matches
-  if (r.exactMatches < 2 && totalMatched < 3) {
+  // NUCLEAR OPTION: Require at least 2 EXACT keyword matches, period.
+  // No exceptions, no title-only matches, no synonym-only matches.
+  // This completely prevents false positives from weak semantic drift.
+  if (r.exactMatches < 2) {
     return 0;
   }
 
-  // If only title matches (no exact or synonym), require at least 4 title words
-  // Increased from 3 to be more strict
-  if (r.exactMatches === 0 && r.synonymMatches === 0 && r.titleMatches < 4) {
+  // Additional safety: require at least 3 total matches for confidence
+  if (totalMatched < 3) {
     return 0;
   }
 
