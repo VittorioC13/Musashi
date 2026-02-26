@@ -36,7 +36,7 @@ The initial migration is at:
 ### Apply migrations
 
 ```bash
-cd /Users/ty/Documents/Musashi/Musashi
+cd /Musashi
 supabase login
 supabase link --project-ref <your_project_ref>
 supabase db push
