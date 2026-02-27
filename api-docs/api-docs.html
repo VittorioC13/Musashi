@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musashi API - Intelligence for AI Trading Agents</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .tagline {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin: 30px 0;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #764ba2;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+        }
+
+        code {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .endpoint {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature h3 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .cta {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 20px 10px 20px 0;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .example-request {
+            margin: 20px 0;
+        }
+
+        .response-preview {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            margin: 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .badge {
+            background: #4caf50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Musashi API</h1>
+        <p class="tagline">Intelligence for AI Trading Agents</p>
+
+        <div class="section">
+            <p style="font-size: 1.1em; color: #555;">
+                Analyze text from social media, news, or conversations to identify relevant prediction markets on <strong>Polymarket</strong> and <strong>Kalshi</strong>. Built for AI agents that need real-time market intelligence.
+            </p>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>⚡ Sub-second</h3>
+                <p>Get matches in <200ms</p>
+            </div>
+            <div class="feature">
+                <h3>🎯 High precision</h3>
+                <p>Keyword + synonym matching</p>
+            </div>
+            <div class="feature">
+                <h3>📊 Structured JSON</h3>
+                <p>Agent-friendly format</p>
+            </div>
+            <div class="feature">
+                <h3>🤖 Agent-first</h3>
+                <p>Built for programmatic access</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Start</h2>
+            <div class="endpoint">POST /api/analyze-text</div>
+
+            <div class="example-request">
+                <h3>Request:</h3>
+                <pre><code>{
+  "text": "The Fed is likely to cut interest rates in March",
+  "minConfidence": 0.25,
+  "maxResults": 5
+}</code></pre>
+            </div>
+
+            <div class="response-preview">
+                <h3>Response:</h3>
+                <pre><code>{
+  "success": true,
+  "data": {
+    "markets": [
+      {
+        "market": {
+          "id": "kalshi-fed-rate-cut",
+          "title": "Will the Fed cut interest rates in March 2026?",
+          "platform": "kalshi",
+          "yesPrice": 0.72,
+          "volume24h": 389000,
+          "url": "https://kalshi.com/markets/..."
+        },
+        "confidence": 0.87,
+        "matchedKeywords": ["fed", "interest rate", "rate cut"]
+      }
+    ],
+    "matchCount": 1,
+    "timestamp": "2026-02-27T10:30:15.234Z"
+  }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>API Parameters</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Required</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>text</code></td>
+                        <td>string</td>
+                        <td><span class="badge">Required</span></td>
+                        <td>Text to analyze (tweet, article, message)</td>
+                    </tr>
+                    <tr>
+                        <td><code>minConfidence</code></td>
+                        <td>number</td>
+                        <td>Optional</td>
+                        <td>Minimum confidence (0.0-1.0), default: 0.25</td>
+                    </tr>
+                    <tr>
+                        <td><code>maxResults</code></td>
+                        <td>number</td>
+                        <td>Optional</td>
+                        <td>Max markets to return, default: 5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Code Example</h2>
+            <pre><code>// JavaScript / TypeScript
+const response = await fetch('https://musashi-api.vercel.app/api/analyze-text', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    text: 'Bitcoin just crossed $100k!',
+    maxResults: 3
+  })
+});
+
+const { success, data } = await response.json();
+
+if (success) {
+  data.markets.forEach(match => {
+    console.log(`${(match.confidence * 100).toFixed(0)}% - ${match.market.title}`);
+    console.log(`  YES: ${(match.market.yesPrice * 100).toFixed(0)}%`);
+    console.log(`  Trade: ${match.market.url}`);
+  });
+}</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Use Cases</h2>
+            <ul style="line-height: 2; font-size: 1.05em;">
+                <li>📱 <strong>Twitter Monitoring:</strong> Agent detects market-relevant tweets → Auto-trades</li>
+                <li>💬 <strong>Chatbot Assistant:</strong> Analyze conversation → Suggest markets</li>
+                <li>📰 <strong>News Aggregator:</strong> Headlines → Markets → Arbitrage detection</li>
+                <li>📊 <strong>Sentiment Analyzer:</strong> User posts → Position recommendations</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Supported Markets</h2>
+            <p>Currently analyzing <strong>100+ markets</strong> across:</p>
+            <ul style="line-height: 2; font-size: 1.05em; columns: 2;">
+                <li>🏛️ US Politics</li>
+                <li>💰 Economics</li>
+                <li>💻 Technology</li>
+                <li>₿ Crypto</li>
+                <li>⚽ Sports</li>
+                <li>🌍 Geopolitics</li>
+                <li>🎬 Entertainment</li>
+                <li>🌡️ Climate</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Rate Limits</h2>
+            <div class="response-preview">
+                <p style="margin: 0;"><strong>Current (MVP):</strong></p>
+                <ul style="margin: 10px 0 0 20px;">
+                    <li>✅ No rate limits</li>
+                    <li>✅ No authentication required</li>
+                    <li>✅ Free for all agents</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <a href="https://github.com/rotciv/musashi/blob/main/API_DOCUMENTATION.md" class="cta">📖 Full Documentation</a>
+            <a href="https://github.com/rotciv/musashi" class="cta">⭐ View on GitHub</a>
+        </div>
+
+        <div class="footer">
+            <p><strong>Built for agents. Powered by prediction markets.</strong></p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Musashi API v1.0 | Last updated: February 27, 2026</p>
+        </div>
+    </div>
+</body>
+</html>
