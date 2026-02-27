@@ -88,6 +88,6 @@ export class MusashiApiClient {
 // For local development: Use 'http://localhost:3000'
 // For production: Use 'https://musashi-api.vercel.app' (or your deployed URL)
 export const musashiApi = new MusashiApiClient(
-  // Use environment variable if available, otherwise default to localhost for dev
-  process.env.MUSASHI_API_URL || 'http://localhost:3000'
+  // Production API URL
+  'https://musashi-api.vercel.app'
 );
