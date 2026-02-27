@@ -1,0 +1,361 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Musashi API Schema",
+  "description": "Complete type definitions for Musashi AI Agent API",
+  "version": "1.0.0",
+  "definitions": {
+    "Sentiment": {
+      "type": "string",
+      "enum": ["bullish", "bearish", "neutral"],
+      "description": "Market sentiment: bullish (positive), bearish (negative), or neutral (no clear direction)"
+    },
+    "SuggestedAction": {
+      "type": "string",
+      "enum": ["buy", "sell", "hold"],
+      "description": "Trading action: buy YES shares, sell (buy NO shares), or hold (wait)"
+    },
+    "Confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence score from 0.0 (low) to 1.0 (high)"
+    },
+    "Market": {
+      "type": "object",
+      "required": ["id", "title", "platform", "category", "yesPrice", "noPrice", "volume", "endDate", "url"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique market identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Market question"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["polymarket", "kalshi"],
+          "description": "Prediction market platform"
+        },
+        "category": {
+          "type": "string",
+          "description": "Market category (e.g., crypto, politics, sports)"
+        },
+        "yesPrice": {
+          "$ref": "#/definitions/Confidence",
+          "description": "Current YES price (0.0 to 1.0)"
+        },
+        "noPrice": {
+          "$ref": "#/definitions/Confidence",
+          "description": "Current NO price (0.0 to 1.0)"
+        },
+        "volume": {
+          "type": "number",
+          "description": "Total trading volume in USD"
+        },
+        "liquidity": {
+          "type": "number",
+          "description": "Available liquidity in USD"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Market resolution date (ISO 8601)"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Market URL"
+        }
+      }
+    },
+    "SentimentPoint": {
+      "type": "object",
+      "required": ["timestamp", "sentiment", "confidence"],
+      "properties": {
+        "timestamp": {
+          "type": "integer",
+          "description": "Unix timestamp in milliseconds"
+        },
+        "sentiment": {
+          "$ref": "#/definitions/Sentiment"
+        },
+        "confidence": {
+          "$ref": "#/definitions/Confidence"
+        }
+      }
+    },
+    "MarketSignal": {
+      "type": "object",
+      "required": ["market", "sentiment", "confidence", "reasoning", "currentPrice", "suggestedAction", "actionConfidence"],
+      "properties": {
+        "market": {
+          "$ref": "#/definitions/Market"
+        },
+        "sentiment": {
+          "$ref": "#/definitions/Sentiment"
+        },
+        "confidence": {
+          "$ref": "#/definitions/Confidence",
+          "description": "Sentiment confidence score"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "AI-generated explanation for the sentiment"
+        },
+        "currentPrice": {
+          "$ref": "#/definitions/Confidence",
+          "description": "Current YES price"
+        },
+        "suggestedAction": {
+          "$ref": "#/definitions/SuggestedAction"
+        },
+        "actionConfidence": {
+          "$ref": "#/definitions/Confidence",
+          "description": "Trading action confidence score"
+        }
+      }
+    },
+    "NewsAnalysis": {
+      "type": "object",
+      "required": ["title", "timestamp", "tweetCount", "overallSentiment", "relatedMarkets", "sentimentTrend"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "News headline"
+        },
+        "timestamp": {
+          "type": "integer",
+          "description": "Unix timestamp in milliseconds"
+        },
+        "tweetCount": {
+          "type": "integer",
+          "description": "Number of tweets analyzed"
+        },
+        "overallSentiment": {
+          "type": "object",
+          "required": ["sentiment", "confidence", "reasoning", "keyPoints"],
+          "properties": {
+            "sentiment": {
+              "$ref": "#/definitions/Sentiment"
+            },
+            "confidence": {
+              "$ref": "#/definitions/Confidence"
+            },
+            "reasoning": {
+              "type": "string",
+              "description": "AI explanation for the sentiment"
+            },
+            "keyPoints": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Key insights from the analysis"
+            }
+          }
+        },
+        "relatedMarkets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MarketSignal"
+          },
+          "description": "Prediction markets related to this news"
+        },
+        "sentimentTrend": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SentimentPoint"
+          },
+          "description": "Historical sentiment trend"
+        }
+      }
+    },
+    "HealthData": {
+      "type": "object",
+      "required": ["status", "version", "marketsLoaded", "lastUpdate"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["healthy"],
+          "description": "Extension health status"
+        },
+        "version": {
+          "type": "string",
+          "description": "Extension version"
+        },
+        "marketsLoaded": {
+          "type": "integer",
+          "description": "Number of markets in database"
+        },
+        "lastUpdate": {
+          "type": "integer",
+          "description": "Last update timestamp (Unix milliseconds)"
+        }
+      }
+    },
+    "SuccessResponse": {
+      "type": "object",
+      "required": ["success", "data"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "const": true
+        },
+        "data": {
+          "description": "Response data (varies by endpoint)"
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "required": ["success", "error"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "const": false
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message"
+        }
+      }
+    }
+  },
+  "endpoints": {
+    "API_GET_NEWS_ANALYSES": {
+      "description": "Get AI sentiment analysis for trending news",
+      "request": {
+        "type": "object",
+        "required": ["type", "data"],
+        "properties": {
+          "type": {
+            "const": "API_GET_NEWS_ANALYSES"
+          },
+          "data": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        }
+      },
+      "response": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["success", "data"],
+            "properties": {
+              "success": { "const": true },
+              "data": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/NewsAnalysis" }
+              }
+            }
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      }
+    },
+    "API_GET_MARKET_SIGNALS": {
+      "description": "Get sentiment signals for prediction markets",
+      "request": {
+        "type": "object",
+        "required": ["type", "data"],
+        "properties": {
+          "type": {
+            "const": "API_GET_MARKET_SIGNALS"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "marketId": {
+                "type": "string",
+                "description": "Optional: filter by specific market ID"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "response": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["success", "data"],
+            "properties": {
+              "success": { "const": true },
+              "data": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/MarketSignal" }
+              }
+            }
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      }
+    },
+    "API_GET_MARKETS": {
+      "description": "Get complete market database",
+      "request": {
+        "type": "object",
+        "required": ["type", "data"],
+        "properties": {
+          "type": {
+            "const": "API_GET_MARKETS"
+          },
+          "data": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        }
+      },
+      "response": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["success", "data"],
+            "properties": {
+              "success": { "const": true },
+              "data": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/Market" }
+              }
+            }
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      }
+    },
+    "API_HEALTH": {
+      "description": "Check extension health status",
+      "request": {
+        "type": "object",
+        "required": ["type", "data"],
+        "properties": {
+          "type": {
+            "const": "API_HEALTH"
+          },
+          "data": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        }
+      },
+      "response": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["success", "data"],
+            "properties": {
+              "success": { "const": true },
+              "data": { "$ref": "#/definitions/HealthData" }
+            }
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@
 
 import { TwitterExtractor, Tweet } from './twitter-extractor';
 import { KeywordMatcher } from '../analysis/keyword-matcher';
+import { musashiApi } from '../api/musashi-api-client';
 import { MarketMatch, Market } from '../types/market';
 import { injectTwitterCard, hasTwitterCard, detectTwitterTheme, applyThemeToAllCards } from './inject-twitter-card';
 import '../sidebar/sidebar.css';
@@ -43,42 +44,68 @@ if (!isTwitter) {
   }
 
   async function initializeMusashi() {
-    console.log('[Musashi] Requesting markets from service worker...');
-    const markets = await loadMarketsFromServiceWorker();
+    console.log('[Musashi] Initializing Musashi...');
 
-    if (markets.length === 0) {
-      console.warn('[Musashi] No markets received. Check the Service Worker console for errors.');
-      return;
+    // Try API first - if it fails, fall back to local matching
+    let useLocalMatcher = false;
+    let localMatcher: KeywordMatcher | null = null;
+
+    // Test API connection
+    try {
+      console.log('[Musashi] Testing API connection...');
+      const testMatches = await musashiApi.analyzeText('test', { maxResults: 1 });
+      console.log('[Musashi] ✓ API connected successfully');
+    } catch (error) {
+      console.warn('[Musashi] API unavailable, falling back to local matching:', error);
+      useLocalMatcher = true;
+
+      // Load markets for local matcher
+      const markets = await loadMarketsFromServiceWorker();
+      if (markets.length === 0) {
+        console.warn('[Musashi] No markets available for local matching. Exiting.');
+        return;
+      }
+      localMatcher = new KeywordMatcher(markets, 0.25, 5);
+      console.log(`[Musashi] Local matcher initialized with ${markets.length} markets`);
     }
 
-    console.log(`[Musashi] ${markets.length} markets loaded. Starting tweet scanner...`);
-    const matcher = new KeywordMatcher(markets, 0.25, 5); // Balanced threshold for quality matches
+    console.log('[Musashi] Starting tweet scanner...');
 
     setTimeout(() => {
-      extractor.start((tweets: Tweet[]) => {
+      extractor.start(async (tweets: Tweet[]) => {
         console.log(`[Musashi] Scanned ${tweets.length} tweet(s)`);
         let injected = 0;
 
-        tweets.forEach((tweet) => {
+        for (const tweet of tweets) {
           // Always check if card exists, even for "processed" tweets
           // This handles Twitter re-rendering the DOM when expanding tweets
           if (hasTwitterCard(tweet.element)) {
-            return; // Card already exists, skip
+            continue; // Card already exists, skip
           }
 
-          const matches = matcher.match(tweet.text);
+          // Get matches from API or local matcher
+          let matches: MarketMatch[] = [];
+          if (useLocalMatcher && localMatcher) {
+            matches = localMatcher.match(tweet.text);
+          } else {
+            matches = await musashiApi.analyzeText(tweet.text, {
+              minConfidence: 0.25,
+              maxResults: 5,
+            });
+          }
 
           if (matches.length > 0) {
             const best = matches[0];
+            const source = useLocalMatcher ? 'LOCAL' : 'API';
             console.log(
-              `[Musashi] MATCH ${(best.confidence * 100).toFixed(0)}% — "${best.market.title}"` +
+              `[Musashi ${source}] MATCH ${(best.confidence * 100).toFixed(0)}% — "${best.market.title}"` +
               (matches.length > 1 ? ` (+${matches.length - 1} secondary)` : '')
             );
             injectTwitterCard(tweet.element, best, tweet.text, matches.slice(1, 3));
             injected++;
             allMatches.push(...matches);
           }
-        });
+        }
 
         if (injected > 0) console.log(`[Musashi] Injected ${injected} card(s)`);
 
