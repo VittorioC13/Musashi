@@ -1,6 +1,16 @@
 // Mock Kalshi market data for MVP testing
+// Phase 2: Some markets include real platform IDs for live price fetching
 
 import { Market } from '../types/market';
+
+/**
+ * To add live prices to a market:
+ * 1. For Kalshi markets: Add the real ticker (e.g., ticker: "FED-26MAR-R")
+ * 2. For Polymarket markets: Add the condition_id (e.g., polymarket_id: "0x1234...")
+ * 3. Find real IDs by searching:
+ *    - Kalshi: https://kalshi.com/markets
+ *    - Polymarket: https://polymarket.com
+ */
 
 export const mockMarkets: Market[] = [
   // ── US Politics ───────────────────────────────────────────────────────────
@@ -16,6 +26,8 @@ export const mockMarkets: Market[] = [
     url: 'https://kalshi.com/markets',
     category: 'us_politics',
     lastUpdated: new Date().toISOString(),
+    // Phase 2: Real Kalshi ticker for live prices (TODO: verify actual ticker)
+    ticker: 'PRES-2024-TRUMP',
   },
   {
     id: 'kalshi-biden-reelection',
@@ -57,6 +69,8 @@ export const mockMarkets: Market[] = [
     url: 'https://kalshi.com/markets',
     category: 'monetary_policy',
     lastUpdated: new Date().toISOString(),
+    // Phase 2: Real Kalshi ticker for live prices (TODO: verify actual ticker)
+    ticker: 'FED-26MAR-CUT',
   },
   {
     id: 'kalshi-inflation-cpi',
@@ -152,6 +166,8 @@ export const mockMarkets: Market[] = [
     url: 'https://kalshi.com/markets',
     category: 'crypto',
     lastUpdated: new Date().toISOString(),
+    // Phase 2: Real Kalshi ticker for live prices (TODO: verify actual ticker)
+    ticker: 'BTC-100K-DEC26',
   },
   {
     id: 'kalshi-ethereum-5k',
@@ -911,6 +927,8 @@ export const mockMarkets: Market[] = [
     lastUpdated: new Date().toISOString(),
     endDate: '2026-12-31',
     oneDayPriceChange: -0.04,
+    // Phase 2: Real Polymarket condition ID for live prices (TODO: find actual condition_id)
+    polymarket_id: '0x1234567890abcdef',  // Placeholder - needs real ID
   },
   {
     id: 'poly-pokimane-retire',
@@ -970,6 +988,8 @@ export const mockMarkets: Market[] = [
     category: 'science',
     lastUpdated: new Date().toISOString(),
     endDate: '2026-12-31',
+    // Phase 2: Real Polymarket condition ID for live prices (TODO: find actual condition_id)
+    polymarket_id: '0xabcdef1234567890',  // Placeholder - needs real ID
   },
   {
     id: 'poly-quantum-breakthrough',

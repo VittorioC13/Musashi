@@ -5,6 +5,8 @@ import type { AnalyzeTextRequest, AnalyzeTextResponse } from './lib/types/market
 let KeywordMatcher: any;
 let matcher: any;
 let phase1Utils: any;
+let priceFetcher: any;
+let arbitrageDetector: any;
 
 async function initMatcher() {
   if (!matcher) {
@@ -30,6 +32,19 @@ async function initPhase1Utils() {
     }
   }
   return phase1Utils;
+}
+
+async function initPhase2Utils() {
+  if (!priceFetcher || !arbitrageDetector) {
+    try {
+      priceFetcher = await import('./lib/services/price-fetcher');
+      arbitrageDetector = await import('./lib/analysis/arbitrage-detector');
+    } catch (error) {
+      console.error('Failed to load phase2 utils:', error);
+      throw error;
+    }
+  }
+  return { priceFetcher, arbitrageDetector };
 }
 
 export default async function handler(
@@ -101,11 +116,72 @@ export default async function handler(
     const allMarkets = matcher.getAllMarkets ? matcher.getAllMarkets() : [];
     const totalMarkets = allMarkets.length || 124; // Fallback to known count
 
+    // Phase 2: Fetch live prices for matched markets
+    const phase2 = await initPhase2Utils();
+    let livePricesFetched = 0;
+
+    // Update each match with live prices
+    for (const match of matches) {
+      try {
+        const livePrice = await phase2.priceFetcher.fetchLivePrice(match.market);
+
+        // Update market with live data
+        match.market.yesPrice = livePrice.yesPrice;
+        match.market.noPrice = livePrice.noPrice;
+        match.market.isLive = livePrice.isLive;
+
+        if (livePrice.volume !== undefined) {
+          match.market.volume24h = livePrice.volume;
+        }
+
+        if (livePrice.isLive) {
+          livePricesFetched++;
+        }
+      } catch (error) {
+        // If price fetch fails, keep mock prices
+        console.error(`Failed to fetch price for ${match.market.id}:`, error);
+      }
+    }
+
+    // Phase 2: Detect arbitrage if multiple platforms present
+    let arbitrage = undefined;
+    if (matches.length >= 2) {
+      // Check if we have different platforms
+      const platforms = new Set(matches.map(m => m.market.platform));
+      if (platforms.size > 1) {
+        // Find Polymarket and Kalshi prices
+        const polymarketMatch = matches.find(m => m.market.platform === 'polymarket');
+        const kalshiMatch = matches.find(m => m.market.platform === 'kalshi');
+
+        if (polymarketMatch && kalshiMatch) {
+          arbitrage = phase2.arbitrageDetector.detectArbitrage(
+            polymarketMatch.market.yesPrice,
+            kalshiMatch.market.yesPrice
+          );
+        }
+      }
+    }
+
     // Phase 1: Generate enhanced fields for agents
     const eventId = utils.generateEventId(text, matches);
-    const signalType = utils.classifySignal(text, matches);
-    const urgency = utils.determineUrgency(signalType, matches, text);
+    let signalType = utils.classifySignal(text, matches);
+
+    // Phase 2: Override signal type if arbitrage detected
+    if (arbitrage && arbitrage.detected) {
+      signalType = 'arbitrage';
+    }
+
+    let urgency = utils.determineUrgency(signalType, matches, text);
+
+    // Phase 2: Set urgency to critical if arbitrage detected
+    if (signalType === 'arbitrage') {
+      urgency = 'critical';
+    }
+
     const metadata = utils.calculateMetadata(startTime, totalMarkets, matches.length);
+    // Add Phase 2 metadata
+    (metadata as any).live_prices_fetched = livePricesFetched;
+    (metadata as any).cache_hits = matches.length - livePricesFetched;
 
     // Build enhanced response
     const response: AnalyzeTextResponse = {
@@ -120,7 +196,8 @@ export default async function handler(
         markets: matches,
         matchCount: matches.length,
         timestamp: new Date().toISOString(),
-        metadata: metadata,  // Phase 1: Processing statistics
+        metadata: metadata,  // Phase 1 & 2: Processing statistics
+        arbitrage: arbitrage,  // Phase 2: Arbitrage detection
       },
     };
 

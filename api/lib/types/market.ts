@@ -15,6 +15,11 @@ export interface Market {
   numericId?: string;
   oneDayPriceChange?: number;
   endDate?: string;
+
+  // Phase 2: Real platform IDs for live price fetching
+  ticker?: string;        // Kalshi market ticker (e.g., "FED-26MAR20-R")
+  polymarket_id?: string; // Polymarket condition ID for CLOB API
+  isLive?: boolean;       // Whether this market has live prices
 }
 
 export interface MarketMatch {
@@ -41,6 +46,18 @@ export interface ResponseMetadata {
   model_version: string;
 }
 
+// Phase 2: Arbitrage detection result
+export interface ArbitrageOpportunity {
+  detected: boolean;
+  spread: number;
+  profit_potential: number;
+  buy_platform: string;
+  buy_price: number;
+  sell_platform: string;
+  sell_price: number;
+  recommendation: string;
+}
+
 export interface AnalyzeTextResponse {
   // Phase 1: Enhanced fields for agents
   event_id: string;           // Unique ID to track events
@@ -54,6 +71,7 @@ export interface AnalyzeTextResponse {
     matchCount: number;
     timestamp: string;
     metadata: ResponseMetadata;  // Phase 1: Processing stats
+    arbitrage?: ArbitrageOpportunity;  // Phase 2: Arbitrage detection
   };
   error?: string;
 }
