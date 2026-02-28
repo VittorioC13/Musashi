@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musashi - AI Agent Intelligence for Prediction Markets</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">MUSASHI</div>
+        <div class="nav-links">
+            <a href="#demo">DEMO</a>
+            <a href="https://musashi-api.vercel.app/api/test" target="_blank">API</a>
+            <a href="https://github.com/VittorioC13/Musashi" target="_blank">GITHUB</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <p class="eyebrow">SEE THE DIFFERENCE</p>
+            <h1 class="headline">
+                Without Musashi, your agents
+                <span class="highlight">lose every trade</span>
+            </h1>
+        </section>
+
+        <section class="comparison" id="demo">
+            <div class="terminal-container">
+                <!-- WITHOUT MUSASHI -->
+                <div class="terminal without">
+                    <div class="terminal-header">
+                        <div class="dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="terminal-title">WITHOUT MUSASHI</div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="line prompt">$ trading-bot starting...</div>
+                        <div class="line muted">Agent idle. No market intelligence.</div>
+                        <div class="line muted">Waiting for instructions...</div>
+                        <div class="line"></div>
+                        <div class="line muted">Still waiting...</div>
+                        <div class="line"></div>
+                        <div class="line human">Human: "Fed just cut rates!"</div>
+                        <div class="line"></div>
+                        <div class="line muted">No connected APIs. No context. No prices.</div>
+                        <div class="line"></div>
+                        <div class="line error">Agent has nothing to trade on.</div>
+                        <div class="line"></div>
+                        <div class="line comment">// manually checking 5 different APIs...</div>
+                        <div class="line comment">// parsing tweets manually...</div>
+                        <div class="line comment">// matching markets manually...</div>
+                        <div class="line"></div>
+                        <div class="line muted">Processing... (45 seconds elapsed)</div>
+                        <div class="line"></div>
+                        <div class="line human">Human: "Never mind, market already moved."</div>
+                        <div class="line"></div>
+                        <div class="line error">❌ Trade opportunity MISSED</div>
+                        <div class="line error">❌ Lost $2,000 potential profit</div>
+                        <div class="line"></div>
+                        <div class="line comment">// a very expensive missed opportunity</div>
+                    </div>
+                </div>
+
+                <!-- WITH MUSASHI -->
+                <div class="terminal with">
+                    <div class="terminal-header">
+                        <div class="dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="terminal-title">WITH MUSASHI</div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="line prompt">$ trading-bot starting... <span class="success">musashi-sdk active</span></div>
+                        <div class="line agent">🤖 Connected to Musashi API – watching 124 markets</div>
+                        <div class="line agent">🎯 Event detection: <span class="success">ARMED</span></div>
+                        <div class="line"></div>
+                        <div class="line muted">querying musashi → detected event: "Fed rate cut announcement"</div>
+                        <div class="line"></div>
+                        <div class="line-indent">
+                            <div class="json-key">event_id:</div> <span class="json-value">"evt_monetary_530b"</span>
+                        </div>
+                        <div class="line-indent">
+                            <div class="json-key">signal_type:</div> <span class="json-value success">"news_event"</span>
+                        </div>
+                        <div class="line-indent">
+                            <div class="json-key">urgency:</div> <span class="json-value critical">"critical"</span>
+                        </div>
+                        <div class="line-indent">
+                            <div class="json-key">yesPrice:</div> <span class="json-value">0.64</span> <span class="muted">(64%)</span>
+                        </div>
+                        <div class="line-indent">
+                            <div class="json-key">isLive:</div> <span class="json-value success">true</span> ✅
+                        </div>
+                        <div class="line-indent">
+                            <div class="json-key">volume24h:</div> <span class="json-value">$8,420,518</span>
+                        </div>
+                        <div class="line-indent">
+                            <div class="json-key">processing_time:</div> <span class="json-value">192ms</span>
+                        </div>
+                        <div class="line"></div>
+                        <div class="line agent">✅ Analysis complete. High confidence trade detected.</div>
+                        <div class="line agent">🚨 Executing: BUY $10,000 at 64%</div>
+                        <div class="line"></div>
+                        <div class="line success">✅ Order filled: $10,000 @ 64% ($6,400 cost)</div>
+                        <div class="line"></div>
+                        <div class="line muted">// 60 seconds later...</div>
+                        <div class="line"></div>
+                        <div class="line agent">📈 Market updated to 82%</div>
+                        <div class="line agent">💰 Executing: SELL $10,000 at 82%</div>
+                        <div class="line"></div>
+                        <div class="line success">✅ Trade complete!</div>
+                        <div class="line success">💵 Profit: <span class="profit">+$1,800</span> (28% return)</div>
+                        <div class="line success">⏱️  Time: 2 minutes</div>
+                        <div class="line"></div>
+                        <div class="line human">Human: "WAIT WHAT 😱😱😱 I love it!!!"</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="stats">
+            <div class="stat">
+                <div class="stat-number">124</div>
+                <div class="stat-label">MARKETS LIVE</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">BOTS CONNECTED</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">192ms</div>
+                <div class="stat-label">AVG RESPONSE TIME</div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <h2>Start building with Musashi</h2>
+            <p>One API call. Instant market intelligence. Real profits.</p>
+            <div class="cta-buttons">
+                <a href="https://musashi-api.vercel.app/api/test" class="btn primary" target="_blank">Try API</a>
+                <a href="https://github.com/VittorioC13/Musashi" class="btn secondary" target="_blank">View Docs</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built for AI agents that never sleep. 💤💰</p>
+        <p><a href="https://github.com/VittorioC13/Musashi" target="_blank">GitHub</a> · <a href="https://musashi-api.vercel.app" target="_blank">API</a></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
