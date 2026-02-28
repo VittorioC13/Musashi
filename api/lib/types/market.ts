@@ -30,12 +30,30 @@ export interface AnalyzeTextRequest {
   maxResults?: number;
 }
 
+// Phase 1: Enhanced response types for bot developers
+export type SignalType = 'arbitrage' | 'news_event' | 'sentiment_shift' | 'user_interest';
+export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export interface ResponseMetadata {
+  processing_time_ms: number;
+  sources_checked: number;
+  markets_analyzed: number;
+  model_version: string;
+}
+
 export interface AnalyzeTextResponse {
+  // Phase 1: Enhanced fields for agents
+  event_id: string;           // Unique ID to track events
+  signal_type: SignalType;    // Type of signal detected
+  urgency: UrgencyLevel;      // How time-sensitive this is
+
+  // Original fields
   success: boolean;
   data?: {
     markets: MarketMatch[];
     matchCount: number;
     timestamp: string;
+    metadata: ResponseMetadata;  // Phase 1: Processing stats
   };
   error?: string;
 }

@@ -3,12 +3,25 @@
 
 import { MarketMatch } from '../types/market';
 
+// Phase 1: Enhanced API response (extension ignores new fields)
 interface AnalyzeTextResponse {
+  // Phase 1: New fields for bot developers (extension ignores these)
+  event_id: string;
+  signal_type: 'arbitrage' | 'news_event' | 'sentiment_shift' | 'user_interest';
+  urgency: 'low' | 'medium' | 'high' | 'critical';
+
+  // Original fields
   success: boolean;
   data?: {
     markets: MarketMatch[];
     matchCount: number;
     timestamp: string;
+    metadata?: {  // Phase 1: Processing stats
+      processing_time_ms: number;
+      sources_checked: number;
+      markets_analyzed: number;
+      model_version: string;
+    };
   };
   error?: string;
 }
