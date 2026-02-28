@@ -3,18 +3,15 @@
 
 const POLYMARKET_BASE_URL = 'https://gamma-api.polymarket.com';
 
-interface PolymarketOutcome {
-  name: string;
-  price: string;
-}
-
 interface PolymarketMarketResponse {
   id: string;
   question: string;
-  outcomes: PolymarketOutcome[];
-  volume?: string;
-  liquidity?: string;
-  active?: boolean;
+  conditionId: string;
+  outcomePrices: string; // JSON string like "[\"0.018\", \"0.982\"]"
+  outcomes: string;       // JSON string like "[\"Yes\", \"No\"]"
+  volume: string;
+  liquidity: string;
+  active: boolean;
 }
 
 export interface PolymarketPrice {
@@ -26,13 +23,14 @@ export interface PolymarketPrice {
 }
 
 /**
- * Fetch live price from Polymarket for a specific market
- * @param conditionId - Polymarket condition/market ID
+ * Fetch live price from Polymarket for a specific market by condition ID
+ * @param conditionId - Polymarket condition ID
  * @returns Live price data or throws error
  */
 export async function getPolymarketPrice(conditionId: string): Promise<PolymarketPrice> {
   try {
-    const response = await fetch(`${POLYMARKET_BASE_URL}/markets/${conditionId}`, {
+    // Search for market by conditionId since direct lookup may not work
+    const response = await fetch(`${POLYMARKET_BASE_URL}/markets?active=true&closed=false&limit=100`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -43,22 +41,32 @@ export async function getPolymarketPrice(conditionId: string): Promise<Polymarke
       throw new Error(`Polymarket API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: PolymarketMarketResponse = await response.json();
+    const markets: PolymarketMarketResponse[] = await response.json();
 
-    // Polymarket returns outcomes array with prices
-    // Typically [0] = Yes, [1] = No, but verify by name
-    const yesOutcome = data.outcomes.find(o => o.name.toLowerCase() === 'yes');
-    const noOutcome = data.outcomes.find(o => o.name.toLowerCase() === 'no');
+    // Find market with matching conditionId
+    const market = markets.find(m => m.conditionId === conditionId);
 
-    if (!yesOutcome || !noOutcome) {
+    if (!market) {
+      throw new Error(`Market with conditionId ${conditionId} not found`);
+    }
+
+    // Parse outcome prices from JSON string
+    const prices = JSON.parse(market.outcomePrices) as string[];
+    const outcomes = JSON.parse(market.outcomes) as string[];
+
+    // Find Yes/No indices (typically [0] = Yes, [1] = No)
+    const yesIndex = outcomes.findIndex(o => o.toLowerCase() === 'yes');
+    const noIndex = outcomes.findIndex(o => o.toLowerCase() === 'no');
+
+    if (yesIndex === -1 || noIndex === -1) {
       throw new Error('Invalid Polymarket response: missing Yes/No outcomes');
     }
 
     return {
-      yesPrice: parseFloat(yesOutcome.price),
-      noPrice: parseFloat(noOutcome.price),
-      volume: data.volume ? parseInt(data.volume, 10) : 0,
-      liquidity: data.liquidity ? parseInt(data.liquidity, 10) : 0,
+      yesPrice: parseFloat(prices[yesIndex]),
+      noPrice: parseFloat(prices[noIndex]),
+      volume: parseFloat(market.volume) || 0,
+      liquidity: parseFloat(market.liquidity) || 0,
       isLive: true,
     };
   } catch (error) {
@@ -74,7 +82,7 @@ export async function getPolymarketPrice(conditionId: string): Promise<Polymarke
  */
 export async function getPolymarketMarkets(limit: number = 100): Promise<PolymarketMarketResponse[]> {
   try {
-    const response = await fetch(`${POLYMARKET_BASE_URL}/markets?limit=${limit}`, {
+    const response = await fetch(`${POLYMARKET_BASE_URL}/markets?active=true&closed=false&limit=${limit}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -86,7 +94,7 @@ export async function getPolymarketMarkets(limit: number = 100): Promise<Polymar
     }
 
     const data: PolymarketMarketResponse[] = await response.json();
-    return data.filter(m => m.active !== false);
+    return data.filter(m => m.active);
   } catch (error) {
     console.error('[Polymarket Client] Error fetching markets:', error);
     throw error;

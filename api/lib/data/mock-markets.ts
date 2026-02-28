@@ -433,17 +433,20 @@ export const mockMarkets: Market[] = [
 
   // ── Politics (expanded) ────────────────────────────────────────────────────
   {
-    id: 'kalshi-trump-impeachment',
-    platform: 'kalshi',
-    title: 'Will Trump face impeachment proceedings in 2026?',
-    description: 'Resolves Yes if the House votes to begin impeachment proceedings against Trump in 2026.',
-    keywords: ['trump', 'impeachment', 'congress', 'house', 'republicans', 'democrats', 'white house'],
-    yesPrice: 0.18,
-    noPrice: 0.82,
-    volume24h: 312000,
-    url: 'https://kalshi.com/markets',
+    id: 'poly-trump-deportation',
+    platform: 'polymarket',
+    title: 'Will Trump deport 250,000-500,000 people in 2025?',
+    description: 'Resolves Yes if ICE removes between 250k-500k non-citizens in FY 2025.',
+    keywords: ['trump', 'deportation', 'immigration', 'ice', 'border', 'migrants', 'deport'],
+    yesPrice: 0.96,
+    noPrice: 0.04,
+    volume24h: 7542018,
+    url: 'https://polymarket.com/event/will-trump-deport-250000-500000-people',
     category: 'us_politics',
     lastUpdated: new Date().toISOString(),
+    endDate: '2025-12-31',
+    // Phase 2: Real Polymarket condition ID for live prices - Trump deportation 250-500k
+    polymarket_id: '0x49686d26fb712515cd5e12c23f0a1c7e10214c7faa3cb0a730aabe0c33694082',
   },
   {
     id: 'kalshi-doge-cuts',
