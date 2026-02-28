@@ -15,19 +15,19 @@ import { Market } from '../types/market';
 export const mockMarkets: Market[] = [
   // ── US Politics ───────────────────────────────────────────────────────────
   {
-    id: 'kalshi-trump-2024',
+    id: 'kalshi-bitcoin-reserve',
     platform: 'kalshi',
-    title: 'Will Donald Trump win the 2024 presidential election?',
-    description: 'This market resolves to Yes if Donald Trump wins the 2024 U.S. presidential election.',
-    keywords: ['trump', 'donald trump', 'republican', 'gop', 'white house', 'maga', 'presidential race'],
-    yesPrice: 0.48,
-    noPrice: 0.52,
-    volume24h: 487000,
-    url: 'https://kalshi.com/markets',
-    category: 'us_politics',
+    title: 'Will Trump create a National Bitcoin Reserve before 2027?',
+    description: 'Resolves Yes if Trump officially announces or creates a National Bitcoin Reserve by Dec 31, 2026.',
+    keywords: ['trump', 'donald trump', 'bitcoin', 'btc', 'crypto', 'reserve', 'executive order', 'cryptocurrency'],
+    yesPrice: 0.35,
+    noPrice: 0.65,
+    volume24h: 287000,
+    url: 'https://kalshi.com/markets/kxbtcreserve/bitcoin-reserve/kxbtcreserve-27',
+    category: 'crypto',
     lastUpdated: new Date().toISOString(),
-    // Phase 2: Real Kalshi ticker for live prices (TODO: verify actual ticker)
-    ticker: 'PRES-2024-TRUMP',
+    // Phase 2: Real Kalshi ticker for live prices - Bitcoin Reserve
+    ticker: 'KXBTCRESERVE-27',
   },
   {
     id: 'kalshi-biden-reelection',
@@ -63,14 +63,14 @@ export const mockMarkets: Market[] = [
     title: 'Will the Fed cut interest rates in March 2026?',
     description: 'Resolves Yes if the Federal Reserve cuts the federal funds rate at their March 2026 meeting.',
     keywords: ['fed', 'federal reserve', 'interest rate', 'rate cut', 'fomc', 'jerome powell', 'powell', 'monetary policy'],
-    yesPrice: 0.72,
-    noPrice: 0.28,
-    volume24h: 389000,
-    url: 'https://kalshi.com/markets',
+    yesPrice: 0.64,
+    noPrice: 0.36,
+    volume24h: 450000000,
+    url: 'https://kalshi.com/markets/kxfed/fed-funds-rate/kxfed-26jan',
     category: 'monetary_policy',
     lastUpdated: new Date().toISOString(),
-    // Phase 2: Real Kalshi ticker for live prices (TODO: verify actual ticker)
-    ticker: 'FED-26MAR-CUT',
+    // Phase 2: Real Kalshi ticker for live prices
+    ticker: 'KXFED-26JAN',
   },
   {
     id: 'kalshi-inflation-cpi',
@@ -163,11 +163,11 @@ export const mockMarkets: Market[] = [
     yesPrice: 0.67,
     noPrice: 0.33,
     volume24h: 623000,
-    url: 'https://kalshi.com/markets',
+    url: 'https://kalshi.com/markets/kxbtcmaxy/how-high-will-bitcoin-get-this-year/kxbtcmaxy-26dec31',
     category: 'crypto',
     lastUpdated: new Date().toISOString(),
-    // Phase 2: Real Kalshi ticker for live prices (TODO: verify actual ticker)
-    ticker: 'BTC-100K-DEC26',
+    // Phase 2: Real Kalshi ticker for live prices
+    ticker: 'KXBTCMAXY-26DEC31',
   },
   {
     id: 'kalshi-ethereum-5k',
@@ -710,14 +710,16 @@ export const mockMarkets: Market[] = [
     title: 'Will GTA 6 cost $100+ at launch?',
     description: 'Resolves Yes if Grand Theft Auto 6 standard edition price is $100 or more at launch.',
     keywords: ['gta', 'gta 6', 'grand theft auto', 'rockstar', 'video game', 'gaming', 'game price', 'take two'],
-    yesPrice: 0.34,
-    noPrice: 0.66,
-    volume24h: 567000,
+    yesPrice: 0.0015,
+    noPrice: 0.9985,
+    volume24h: 7090751,
     url: 'https://polymarket.com/event/gta-6-price',
     category: 'gaming',
     lastUpdated: new Date().toISOString(),
-    endDate: '2026-12-31',
-    oneDayPriceChange: 0.03,
+    endDate: '2026-02-28',
+    oneDayPriceChange: 0.001,
+    // Phase 2: Real Polymarket condition ID for live prices - GTA 6 pricing
+    polymarket_id: '0xae5584fbb57f23c1c608d544b656f23d8bf12340cef70811cf31bb0cb4fc2115',
   },
   {
     id: 'poly-elden-ring-dlc',
@@ -916,19 +918,19 @@ export const mockMarkets: Market[] = [
   {
     id: 'poly-tiktok-ban',
     platform: 'polymarket',
-    title: 'Will TikTok be banned in the US in 2026?',
-    description: 'Resolves Yes if TikTok is effectively banned or forced to shut down in the United States in 2026.',
-    keywords: ['tiktok', 'ban', 'social media', 'bytedance', 'china', 'congress', 'app ban'],
-    yesPrice: 0.27,
-    noPrice: 0.73,
-    volume24h: 678000,
-    url: 'https://polymarket.com/event/tiktok-ban',
+    title: 'Who will acquire TikTok? (Amazon option)',
+    description: 'Resolves Yes if Amazon officially announces acquisition of TikTok by June 30, 2026.',
+    keywords: ['tiktok', 'ban', 'acquisition', 'social media', 'bytedance', 'amazon', 'tech'],
+    yesPrice: 0.13,
+    noPrice: 0.87,
+    volume24h: 919400,
+    url: 'https://polymarket.com/event/who-will-acquire-tiktok-559',
     category: 'technology',
     lastUpdated: new Date().toISOString(),
     endDate: '2026-12-31',
-    oneDayPriceChange: -0.04,
-    // Phase 2: Real Polymarket condition ID for live prices (TODO: find actual condition_id)
-    polymarket_id: '0x1234567890abcdef',  // Placeholder - needs real ID
+    oneDayPriceChange: 0.02,
+    // Phase 2: Real Polymarket condition ID for live prices - TikTok Amazon acquisition
+    polymarket_id: '0xdf0ad9c59a828228b41abe1c1194f80facb936b0bb70a5de6c7a742fcd3d278f',
   },
   {
     id: 'poly-pokimane-retire',
@@ -978,18 +980,18 @@ export const mockMarkets: Market[] = [
   {
     id: 'poly-agi-2026',
     platform: 'polymarket',
-    title: 'Will AGI be achieved in 2026?',
-    description: 'Resolves Yes if artificial general intelligence is credibly demonstrated by a major AI lab in 2026.',
-    keywords: ['agi', 'artificial intelligence', 'ai', 'openai', 'deepmind', 'anthropic', 'machine learning'],
-    yesPrice: 0.09,
-    noPrice: 0.91,
-    volume24h: 756000,
-    url: 'https://polymarket.com/event/agi-2026',
+    title: 'OpenAI announces AGI before 2027?',
+    description: 'Resolves Yes if OpenAI or an official representative announces achieving AGI by December 31, 2026.',
+    keywords: ['agi', 'artificial intelligence', 'ai', 'openai', 'sam altman', 'anthropic', 'machine learning'],
+    yesPrice: 0.125,
+    noPrice: 0.875,
+    volume24h: 26039,
+    url: 'https://polymarket.com/event/openai-announces-it-has-achieved-agi-before-2027',
     category: 'science',
     lastUpdated: new Date().toISOString(),
     endDate: '2026-12-31',
-    // Phase 2: Real Polymarket condition ID for live prices (TODO: find actual condition_id)
-    polymarket_id: '0xabcdef1234567890',  // Placeholder - needs real ID
+    // Phase 2: Real Polymarket condition ID for live prices - OpenAI AGI announcement
+    polymarket_id: '0x454005ba2b2a2f3bfeb354e18d8c0cb82136009c8f39589645f9cf2af25f0d25',
   },
   {
     id: 'poly-quantum-breakthrough',
