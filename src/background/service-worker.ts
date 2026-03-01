@@ -5,22 +5,33 @@
 import { fetchPolymarkets } from '../api/polymarket-client';
 import { fetchKalshiMarkets } from '../api/kalshi-client';
 import { detectArbitrage } from '../api/arbitrage-detector';
-import { ArbitrageOpportunity } from '../types/market';
+import { ArbitrageOpportunity, Market } from '../types/market';
 import { analyzeTextWithArbitrage } from '../analysis/analyze-text';
+import { recordBulkSnapshots, getMovers, cleanupOldHistory } from '../api/price-tracker';
 
 // v2 key — invalidates the old Polymarket-only cache so combined data is fetched fresh
 const STORAGE_KEY_MARKETS = 'markets_v2';
 const STORAGE_KEY_TS      = 'marketsTs_v2';
 const STORAGE_KEY_ARBITRAGE = 'arbitrage_v1';
 const STORAGE_KEY_ARBITRAGE_TS = 'arbitrageTs_v1';
-const CACHE_TTL_MS        = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS        = 5 * 60 * 1000; // 5 minutes (reduced from 30)
+
+// Price polling configuration
+const PRICE_POLL_INTERVAL_MS = 60 * 1000; // Poll every 60 seconds
+const TOP_MARKETS_COUNT = 50; // Track top 50 markets by volume
 
 console.log('[Musashi SW] Service worker initialized');
 
 // ── Proactive fetch on install / browser startup ──────────────────────────────
 
-chrome.runtime.onInstalled.addListener(() => { refreshMarkets(); });
-chrome.runtime.onStartup.addListener(() => { refreshMarkets(); });
+chrome.runtime.onInstalled.addListener(() => {
+  refreshMarkets();
+  startPricePolling();
+});
+chrome.runtime.onStartup.addListener(() => {
+  refreshMarkets();
+  startPricePolling();
+});
 
 // ── Message handler ───────────────────────────────────────────────────────────
 
@@ -131,6 +142,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // keep channel open for async
   }
+
+  // Get market movers (markets with significant price changes)
+  if (message.type === 'GET_MOVERS') {
+    chrome.storage.local.get([STORAGE_KEY_MARKETS]).then(async (cached) => {
+      const markets = cached[STORAGE_KEY_MARKETS] ?? [];
+
+      if (!Array.isArray(markets) || markets.length === 0) {
+        console.log('[Musashi SW] No markets available for movers detection');
+        sendResponse({ movers: [] });
+        return;
+      }
+
+      try {
+        const movers = await getMovers(markets, {
+          minChange: message.minChange ?? 0.05,
+          timeframe: message.timeframe ?? '1h',
+          limit: message.limit ?? 20,
+          forceRefresh: message.forceRefresh ?? false,
+        });
+        console.log(`[Musashi SW] Returning ${movers.length} movers`);
+        sendResponse({ movers });
+      } catch (error) {
+        console.error('[Musashi SW] GET_MOVERS error:', error);
+        sendResponse({ movers: [] });
+      }
+    }).catch((e) => {
+      console.error('[Musashi SW] GET_MOVERS error:', e);
+      sendResponse({ movers: [] });
+    });
+    return true; // keep channel open for async
+  }
 });
 
 // Clear badge when navigating away from Twitter/X
@@ -203,13 +245,16 @@ async function refreshMarkets() {
       const arbitrageOpportunities = detectArbitrage(markets, 0.01); // Low threshold for storage
       console.log(`[Musashi SW] Detected ${arbitrageOpportunities.length} arbitrage opportunities`);
 
+      // Record price snapshots for price tracking
+      await recordBulkSnapshots(markets);
+
       await chrome.storage.local.set({
         [STORAGE_KEY_MARKETS]: markets,
         [STORAGE_KEY_TS]: Date.now(),
         [STORAGE_KEY_ARBITRAGE]: arbitrageOpportunities,
         [STORAGE_KEY_ARBITRAGE_TS]: Date.now(),
       });
-      console.log(`[Musashi SW] Stored ${markets.length} markets + ${arbitrageOpportunities.length} arbitrage opportunities`);
+      console.log(`[Musashi SW] Stored ${markets.length} markets + ${arbitrageOpportunities.length} arbitrage opportunities + price snapshots`);
     }
     // Clear any previous ERR badge
     chrome.action.setBadgeText({ text: '' });
@@ -220,6 +265,87 @@ async function refreshMarkets() {
     chrome.action.setBadgeText({ text: 'ERR' });
     chrome.action.setBadgeBackgroundColor({ color: '#FF4444' });
     return [];
+  }
+}
+
+// ── Price polling for movers detection ────────────────────────────────────────
+
+let pricePollingInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start polling prices for top markets by volume
+ */
+function startPricePolling() {
+  // Clear any existing interval
+  if (pricePollingInterval) {
+    clearInterval(pricePollingInterval);
+  }
+
+  console.log('[Musashi SW] Starting price polling (60s interval)');
+
+  // Poll immediately
+  pollTopMarketPrices();
+
+  // Then poll every 60 seconds
+  pricePollingInterval = setInterval(() => {
+    pollTopMarketPrices();
+  }, PRICE_POLL_INTERVAL_MS);
+
+  // Cleanup old history every hour
+  setInterval(() => {
+    cleanupOldHistory();
+  }, 60 * 60 * 1000);
+}
+
+/**
+ * Poll prices for the top markets by volume
+ * Only fetches lightweight price data, not full market list
+ */
+async function pollTopMarketPrices() {
+  try {
+    // Get cached markets
+    const cached = await chrome.storage.local.get([STORAGE_KEY_MARKETS]);
+    const markets: Market[] = cached[STORAGE_KEY_MARKETS] ?? [];
+
+    if (markets.length === 0) {
+      console.log('[Musashi SW] No markets cached, skipping price poll');
+      return;
+    }
+
+    // Get top markets by volume
+    const topMarkets = markets
+      .sort((a, b) => b.volume24h - a.volume24h)
+      .slice(0, TOP_MARKETS_COUNT);
+
+    console.log(`[Musashi SW] Polling prices for top ${topMarkets.length} markets`);
+
+    // For now, we'll record the current prices as snapshots
+    // In a production system, you'd fetch fresh prices from the APIs here
+    // But since we're already fetching full markets every 5 min, we'll use those
+
+    // Record snapshots
+    await recordBulkSnapshots(topMarkets);
+
+    console.log(`[Musashi SW] Recorded ${topMarkets.length} price snapshots`);
+
+    // Detect movers in the background (this will cache them)
+    const movers = await getMovers(markets, {
+      minChange: 0.05,
+      timeframe: '1h',
+      limit: 20,
+      forceRefresh: true,
+    });
+
+    if (movers.length > 0) {
+      console.log(
+        `[Musashi SW] Detected ${movers.length} movers - ` +
+        `Top: ${movers[0].market.title.substring(0, 50)} ` +
+        `(${movers[0].direction === 'up' ? '+' : ''}${(movers[0].priceChange1h * 100).toFixed(1)}%)`
+      );
+    }
+
+  } catch (error) {
+    console.error('[Musashi SW] Price polling error:', error);
   }
 }
 
