@@ -12,6 +12,7 @@
     "https://twitter.com/*",
     "https://x.com/*",
     "https://gamma-api.polymarket.com/*",
+    "https://clob.polymarket.com/*",
     "https://api.elections.kalshi.com/*"
   ],
   "action": {

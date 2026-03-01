@@ -2,7 +2,6 @@
 // Uses word-boundary matching, synonym expansion, phrase extraction, and entity detection
 
 import { Market, MarketMatch } from '../types/market';
-import { mockMarkets } from '../data/mock-markets';
 import { extractEntities, isEntity, ExtractedEntities } from './entity-extractor';
 
 // ─── Stop words ──────────────────────────────────────────────────────────────
@@ -914,13 +913,13 @@ function getRecencyBoost(market: Market): number {
     const now = new Date();
     const daysUntilEnd = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
+    // Markets ending within 7 days get bigger boost (check first!)
+    if (daysUntilEnd > 0 && daysUntilEnd <= 7) {
+      return 0.2; // Increased from 0.1
+    }
     // Markets ending within 30 days get a small boost
     if (daysUntilEnd > 0 && daysUntilEnd <= 30) {
       return 0.1; // Increased from 0.05
-    }
-    // Markets ending within 7 days get bigger boost
-    if (daysUntilEnd > 0 && daysUntilEnd <= 7) {
-      return 0.2; // Increased from 0.1
     }
   } catch (e) {
     // Invalid date, no boost
@@ -1028,7 +1027,7 @@ export class KeywordMatcher {
   private maxResults: number;
 
   constructor(
-    markets: Market[] = mockMarkets,
+    markets: Market[] = [],
     minConfidence: number = 0.22, // Raised from 0.12 to reduce false positives
     maxResults: number = 5
   ) {

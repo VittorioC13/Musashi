@@ -164,24 +164,18 @@ async function detectMovers(markets: Market[], minChange: number): Promise<Marke
 }
 
 /**
- * Get total snapshot count across all markets (for metadata)
+ * Get approximate snapshot count (number of markets tracked)
+ *
+ * Note: Returns key count instead of total snapshots to avoid N+1 query.
+ * Each market has ~2000 snapshots (7 days × 288 snapshots/day).
  */
-async function getTotalSnapshotCount(): Promise<number> {
+async function getTrackedMarketCount(): Promise<number> {
   try {
-    // Scan for all price_history keys
+    // Just count keys, don't fetch all snapshot arrays
     const keys = await kv.keys(`${SNAPSHOT_KEY_PREFIX}*`);
-
-    if (keys.length === 0) return 0;
-
-    // Get all snapshots
-    const snapshots = await Promise.all(
-      keys.map(key => kv.get<PriceSnapshot[]>(key))
-    );
-
-    // Count total snapshots
-    return snapshots.reduce((sum, arr) => sum + (arr?.length || 0), 0);
+    return keys.length;
   } catch (error) {
-    console.error('[Movers API] Failed to get snapshot count:', error);
+    console.error('[Movers API] Failed to get market count:', error);
     return 0;
   }
 }
@@ -251,12 +245,10 @@ export default async function handler(
       return;
     }
 
-    // Record price snapshots to KV (async, don't block response)
-    recordPriceSnapshots(markets).catch(err => {
-      console.error('[Movers API] Failed to record snapshots:', err);
-    });
+    // Record price snapshots to KV (must await to avoid race condition)
+    await recordPriceSnapshots(markets);
 
-    // Detect movers
+    // Detect movers (reads from KV, so must happen after snapshots are written)
     let movers = await detectMovers(markets, minChangeNum);
 
     // Filter by category if specified
@@ -267,8 +259,8 @@ export default async function handler(
     // Limit results
     movers = movers.slice(0, limitNum);
 
-    // Get snapshot count for metadata
-    const snapshotCount = await getTotalSnapshotCount();
+    // Get tracked market count for metadata (lightweight, no N+1 query)
+    const trackedMarkets = await getTrackedMarketCount();
 
     // Build response
     const response = {
@@ -285,7 +277,7 @@ export default async function handler(
         metadata: {
           processing_time_ms: Date.now() - startTime,
           markets_analyzed: markets.length,
-          price_snapshots_stored: snapshotCount,
+          markets_tracked: trackedMarkets,
           storage: 'Vercel KV (Redis)',
           history_retention: '7 days',
         },
