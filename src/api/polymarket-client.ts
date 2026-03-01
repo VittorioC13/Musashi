@@ -6,6 +6,7 @@ import { Market } from '../types/market';
 import { generateKeywords } from './keyword-generator';
 
 const POLYMARKET_API = 'https://gamma-api.polymarket.com';
+const FETCH_TIMEOUT_MS = 10000; // 10s timeout to prevent hanging on cold starts
 
 // Shape of an event object nested inside a market
 interface PolymarketEvent {
@@ -70,33 +71,46 @@ export async function fetchPolymarkets(
       `&order=volume24hrClob&ascending=false` +
       `&limit=${PAGE_SIZE}&offset=${offset}`;
 
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      console.error(`[Musashi SW] Polymarket HTTP ${resp.status}`);
-      throw new Error(`Polymarket API responded with ${resp.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!resp.ok) {
+        console.error(`[Musashi SW] Polymarket HTTP ${resp.status}`);
+        throw new Error(`Polymarket API responded with ${resp.status}`);
+      }
+
+      const data: PolymarketMarket[] = await resp.json();
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected Polymarket API response shape');
+      }
+
+      if (data.length === 0) break; // no more results
+
+      const pageBinary = data
+        .filter(isBinaryMarket)
+        .map(toMarket)
+        .filter(m => m.yesPrice > 0 && m.yesPrice < 1);
+
+      allMarkets.push(...pageBinary);
+
+      console.log(
+        `[Musashi] Polymarket page ${page + 1}: ${data.length} raw → ` +
+        `${pageBinary.length} binary (total: ${allMarkets.length})`
+      );
+
+      if (allMarkets.length >= targetCount || data.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if ((error as Error).name === 'AbortError') {
+        throw new Error(`Polymarket API request timed out after ${FETCH_TIMEOUT_MS}ms`);
+      }
+      throw error;
     }
-
-    const data: PolymarketMarket[] = await resp.json();
-    if (!Array.isArray(data)) {
-      throw new Error('Unexpected Polymarket API response shape');
-    }
-
-    if (data.length === 0) break; // no more results
-
-    const pageBinary = data
-      .filter(isBinaryMarket)
-      .map(toMarket)
-      .filter(m => m.yesPrice > 0 && m.yesPrice < 1);
-
-    allMarkets.push(...pageBinary);
-
-    console.log(
-      `[Musashi] Polymarket page ${page + 1}: ${data.length} raw → ` +
-      `${pageBinary.length} binary (total: ${allMarkets.length})`
-    );
-
-    if (allMarkets.length >= targetCount || data.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
   }
 
   console.log(`[Musashi] Fetched ${allMarkets.length} live markets from Polymarket`);

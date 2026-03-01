@@ -6,6 +6,7 @@ import { Market } from '../types/market';
 import { generateKeywords } from './keyword-generator';
 
 const KALSHI_API = 'https://api.elections.kalshi.com/trade-api/v2';
+const FETCH_TIMEOUT_MS = 10000; // 10s timeout to prevent hanging on cold starts
 
 // Shape of a market object returned by the Kalshi REST API
 interface KalshiMarket {
@@ -79,32 +80,45 @@ export async function fetchKalshiMarkets(
       ? `${KALSHI_API}/markets?status=open&mve_filter=exclude&limit=${PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`
       : `${KALSHI_API}/markets?status=open&mve_filter=exclude&limit=${PAGE_SIZE}`;
 
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      console.error(`[Musashi SW] Kalshi HTTP ${resp.status} — declarativeNetRequest header stripping may not be active yet`);
-      throw new Error(`Kalshi API responded with ${resp.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!resp.ok) {
+        console.error(`[Musashi SW] Kalshi HTTP ${resp.status} — declarativeNetRequest header stripping may not be active yet`);
+        throw new Error(`Kalshi API responded with ${resp.status}`);
+      }
+
+      const data: KalshiMarketsResponse = await resp.json();
+      if (!Array.isArray(data.markets)) {
+        throw new Error('Unexpected Kalshi API response shape');
+      }
+
+      const pageSimple = data.markets
+        .filter(isSimpleMarket)
+        .map(toMarket)
+        .filter(m => m.yesPrice > 0 && m.yesPrice < 1);
+
+      allSimple.push(...pageSimple);
+
+      console.log(
+        `[Musashi] Page ${page + 1}: ${data.markets.length} raw → ` +
+        `${pageSimple.length} simple (total simple: ${allSimple.length})`
+      );
+
+      // Stop early once we have enough, or when the API has no more pages
+      if (allSimple.length >= targetSimpleCount || !data.cursor) break;
+      cursor = data.cursor;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if ((error as Error).name === 'AbortError') {
+        throw new Error(`Kalshi API request timed out after ${FETCH_TIMEOUT_MS}ms`);
+      }
+      throw error;
     }
-
-    const data: KalshiMarketsResponse = await resp.json();
-    if (!Array.isArray(data.markets)) {
-      throw new Error('Unexpected Kalshi API response shape');
-    }
-
-    const pageSimple = data.markets
-      .filter(isSimpleMarket)
-      .map(toMarket)
-      .filter(m => m.yesPrice > 0 && m.yesPrice < 1);
-
-    allSimple.push(...pageSimple);
-
-    console.log(
-      `[Musashi] Page ${page + 1}: ${data.markets.length} raw → ` +
-      `${pageSimple.length} simple (total simple: ${allSimple.length})`
-    );
-
-    // Stop early once we have enough, or when the API has no more pages
-    if (allSimple.length >= targetSimpleCount || !data.cursor) break;
-    cursor = data.cursor;
   }
 
   console.log(`[Musashi] Fetched ${allSimple.length} live markets from Kalshi`);

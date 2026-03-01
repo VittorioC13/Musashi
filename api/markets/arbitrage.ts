@@ -80,10 +80,10 @@ export default async function handler(
     let opportunities = await getArbitrage(minSpreadNum);
 
     // Apply additional filters client-side
+    // Note: opportunities are already sorted by spread descending from detectArbitrage()
     opportunities = opportunities
       .filter(arb => arb.confidence >= minConfidenceNum)
       .filter(arb => !category || arb.polymarket.category === category || arb.kalshi.category === category)
-      .sort((a, b) => b.spread - a.spread)
       .slice(0, limitNum);
 
     // Build response

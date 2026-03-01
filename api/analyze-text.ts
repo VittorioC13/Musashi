@@ -65,6 +65,29 @@ export default async function handler(
 
     const { text, minConfidence = 0.3, maxResults = 5 } = body;
 
+    // Validate numeric parameters
+    if (minConfidence < 0 || minConfidence > 1) {
+      res.status(400).json({
+        event_id: 'evt_error',
+        signal_type: 'user_interest',
+        urgency: 'low',
+        success: false,
+        error: 'minConfidence must be between 0 and 1.',
+      });
+      return;
+    }
+
+    if (maxResults < 1 || maxResults > 100) {
+      res.status(400).json({
+        event_id: 'evt_error',
+        signal_type: 'user_interest',
+        urgency: 'low',
+        success: false,
+        error: 'maxResults must be between 1 and 100.',
+      });
+      return;
+    }
+
     // Get markets
     const markets = await getMarkets();
 

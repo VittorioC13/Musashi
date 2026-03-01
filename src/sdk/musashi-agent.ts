@@ -251,12 +251,30 @@ export class MusashiAgent {
    * ```
    */
   async checkHealth(): Promise<HealthStatus> {
-    const response = await this.request('/api/health');
-    return {
-      status: response.status,
-      timestamp: response.timestamp,
-      services: response.services,
+    // Don't use this.request() because it throws on 503 (degraded status)
+    const url = `${this.baseUrl}/api/health`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
     };
+
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+
+    const res = await fetch(url, { headers });
+    const response = await res.json();
+
+    // Health endpoint returns { success: true, data: { status, timestamp, services } }
+    if (response.success && response.data) {
+      return {
+        status: response.data.status,
+        timestamp: response.data.timestamp,
+        services: response.data.services,
+      };
+    }
+
+    // Fallback for unexpected response shape
+    throw new Error('Invalid health response format');
   }
 
   /**
