@@ -20,7 +20,7 @@ export default async function handler(
   // Only accept GET
   if (req.method !== 'GET') {
     res.status(405).json({
-      status: 'error',
+      success: false,
       error: 'Method not allowed. Use GET.',
     });
     return;
@@ -51,7 +51,7 @@ export default async function handler(
         ? 'down'
         : 'degraded';
 
-    const response = {
+    const healthData = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       uptime_ms: process.uptime() * 1000,
@@ -90,14 +90,18 @@ export default async function handler(
       },
     };
 
+    const response = {
+      success: true,
+      data: healthData,
+    };
+
     const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 503 : 503;
     res.status(statusCode).json(response);
 
   } catch (error) {
     console.error('[Health API] Error:', error);
     res.status(500).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
+      success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
     });
   }

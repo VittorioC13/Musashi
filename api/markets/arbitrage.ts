@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getTopArbitrage } from '../../src/api/arbitrage-detector';
-import { getMarkets } from '../lib/market-cache';
+import { getMarkets, getArbitrage } from '../lib/market-cache';
 
 export default async function handler(
   req: VercelRequest,
@@ -77,13 +76,15 @@ export default async function handler(
       return;
     }
 
-    // Detect arbitrage
-    const opportunities = getTopArbitrage(markets, {
-      minSpread: minSpreadNum,
-      minConfidence: minConfidenceNum,
-      limit: limitNum,
-      category: category as string | undefined,
-    });
+    // Get cached arbitrage opportunities (filtered by minSpread)
+    let opportunities = await getArbitrage(minSpreadNum);
+
+    // Apply additional filters client-side
+    opportunities = opportunities
+      .filter(arb => arb.confidence >= minConfidenceNum)
+      .filter(arb => !category || arb.polymarket.category === category || arb.kalshi.category === category)
+      .sort((a, b) => b.spread - a.spread)
+      .slice(0, limitNum);
 
     // Build response
     const response = {

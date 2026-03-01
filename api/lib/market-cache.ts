@@ -56,23 +56,30 @@ export async function getMarkets(): Promise<Market[]> {
 
 /**
  * Get cached arbitrage opportunities
- * Recomputes only when market cache is refreshed (same TTL)
+ *
+ * Caches with low minSpread (0.01) and filters client-side.
+ * This allows different callers to request different thresholds
+ * without recomputing the expensive O(n×m) scan.
+ *
+ * @param minSpread - Minimum spread threshold (default: 0.03)
+ * @returns Arbitrage opportunities filtered by minSpread
  */
 export async function getArbitrage(minSpread: number = 0.03): Promise<ArbitrageOpportunity[]> {
   const markets = await getMarkets();
   const now = Date.now();
 
-  // Return cached if fresh and same spread threshold
-  if (cachedArbitrage.length > 0 && (now - arbCacheTimestamp) < CACHE_TTL_MS) {
-    console.log(`[Arbitrage Cache] Using cached ${cachedArbitrage.length} opportunities`);
-    return cachedArbitrage;
+  // Recompute if cache is stale
+  if (cachedArbitrage.length === 0 || (now - arbCacheTimestamp) >= CACHE_TTL_MS) {
+    console.log('[Arbitrage Cache] Computing arbitrage opportunities...');
+    // Cache with low threshold (0.01) so we can filter client-side
+    cachedArbitrage = detectArbitrage(markets, 0.01);
+    arbCacheTimestamp = now;
+    console.log(`[Arbitrage Cache] Cached ${cachedArbitrage.length} opportunities (minSpread: 0.01)`);
   }
 
-  // Recompute arbitrage opportunities
-  console.log('[Arbitrage Cache] Computing arbitrage opportunities...');
-  cachedArbitrage = detectArbitrage(markets, minSpread);
-  arbCacheTimestamp = now;
+  // Filter cached results by requested minSpread
+  const filtered = cachedArbitrage.filter(arb => arb.spread >= minSpread);
+  console.log(`[Arbitrage Cache] Returning ${filtered.length}/${cachedArbitrage.length} opportunities (minSpread: ${minSpread})`);
 
-  console.log(`[Arbitrage Cache] Cached ${cachedArbitrage.length} opportunities`);
-  return cachedArbitrage;
+  return filtered;
 }

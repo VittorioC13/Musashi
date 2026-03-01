@@ -51,6 +51,18 @@ export default async function handler(
       return;
     }
 
+    // Validate text length (prevent abuse)
+    if (body.text.length > 10000) {
+      res.status(400).json({
+        event_id: 'evt_error',
+        signal_type: 'user_interest',
+        urgency: 'low',
+        success: false,
+        error: 'Text exceeds 10,000 character limit.',
+      });
+      return;
+    }
+
     const { text, minConfidence = 0.3, maxResults = 5 } = body;
 
     // Get markets

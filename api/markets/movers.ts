@@ -57,6 +57,13 @@ async function recordPriceSnapshots(markets: Market[]): Promise<void> {
         // Get existing snapshots
         const snapshots = await kv.get<PriceSnapshot[]>(key) || [];
 
+        // Skip if already recorded recently (within 60 seconds)
+        // Prevents unbounded KV growth from high-frequency polling
+        const latestTimestamp = snapshots.length > 0 ? snapshots[snapshots.length - 1].timestamp : 0;
+        if (now - latestTimestamp < 60000) {
+          return; // Skip — already recorded in the last minute
+        }
+
         // Add new snapshot
         const newSnapshot: PriceSnapshot = {
           marketId: market.id,

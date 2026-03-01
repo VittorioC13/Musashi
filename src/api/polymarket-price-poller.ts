@@ -60,61 +60,6 @@ export async function fetchPolymarketPrice(numericId: string): Promise<number | 
 }
 
 /**
- * Batch fetch prices for multiple Polymarket markets
- *
- * Fetches prices sequentially with a small delay to avoid rate limiting.
- * Only updates markets that have numericId set.
- *
- * @param markets - Markets to update prices for
- * @param delayMs - Delay between requests (default: 50ms)
- * @returns Markets with updated prices
- */
-export async function batchFetchPolymarketPrices(
-  markets: Market[],
-  delayMs: number = 50
-): Promise<Market[]> {
-  const updatedMarkets: Market[] = [];
-
-  for (const market of markets) {
-    // Only fetch for Polymarket markets with numericId
-    if (market.platform !== 'polymarket' || !market.numericId) {
-      updatedMarkets.push(market);
-      continue;
-    }
-
-    // Fetch fresh price from CLOB
-    const freshPrice = await fetchPolymarketPrice(market.numericId);
-
-    if (freshPrice !== null) {
-      // Update market with fresh price
-      const updated: Market = {
-        ...market,
-        yesPrice: parseFloat(freshPrice.toFixed(2)),
-        noPrice: parseFloat((1 - freshPrice).toFixed(2)),
-        lastUpdated: new Date().toISOString(),
-      };
-      updatedMarkets.push(updated);
-    } else {
-      // Keep existing price if fetch failed
-      updatedMarkets.push(market);
-    }
-
-    // Small delay to avoid rate limiting
-    if (delayMs > 0 && markets.indexOf(market) < markets.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
-  }
-
-  const updatedCount = updatedMarkets.filter((m, i) =>
-    m.platform === 'polymarket' && m.yesPrice !== markets[i].yesPrice
-  ).length;
-
-  console.log(`[Polymarket CLOB] Updated ${updatedCount}/${markets.filter(m => m.platform === 'polymarket').length} Polymarket prices`);
-
-  return updatedMarkets;
-}
-
-/**
  * Parallel batch fetch with controlled concurrency
  *
  * Faster than sequential but respects concurrency limits.
