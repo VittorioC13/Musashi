@@ -173,7 +173,7 @@ function generateSuggestedAction(
   urgency: UrgencyLevel
 ): SuggestedAction {
   // Don't suggest action if edge is too low
-  if (edge < 0.05) {
+  if (edge < 0.10) {
     return {
       direction: 'HOLD',
       confidence: 0,
@@ -228,6 +228,7 @@ function generateSuggestedAction(
 
 /**
  * Generate event ID from tweet text (deterministic hash)
+ * Same text will always produce the same event ID for deduplication
  */
 function generateEventId(tweetText: string): string {
   // Simple hash function for deterministic IDs
@@ -238,7 +239,7 @@ function generateEventId(tweetText: string): string {
     hash = hash & hash; // Convert to 32-bit integer
   }
   const hashStr = Math.abs(hash).toString(36);
-  return `evt_${hashStr}_${Date.now().toString(36)}`;
+  return `evt_${hashStr}`;
 }
 
 /**

@@ -1,49 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Market } from '../../src/types/market';
-import { fetchPolymarkets } from '../../src/api/polymarket-client';
-import { fetchKalshiMarkets } from '../../src/api/kalshi-client';
 import { getTopArbitrage } from '../../src/api/arbitrage-detector';
-
-// In-memory cache for markets (5 minutes TTL)
-let cachedMarkets: Market[] = [];
-let cacheTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-/**
- * Fetch and cache markets from both platforms
- */
-async function getMarkets(): Promise<Market[]> {
-  const now = Date.now();
-
-  // Return cached if fresh
-  if (cachedMarkets.length > 0 && (now - cacheTimestamp) < CACHE_TTL_MS) {
-    console.log(`[Arbitrage API] Using cached ${cachedMarkets.length} markets`);
-    return cachedMarkets;
-  }
-
-  // Fetch fresh markets
-  console.log('[Arbitrage API] Fetching fresh markets...');
-
-  try {
-    const [polyResult, kalshiResult] = await Promise.allSettled([
-      fetchPolymarkets(500, 10),
-      fetchKalshiMarkets(400, 10),
-    ]);
-
-    const polyMarkets = polyResult.status === 'fulfilled' ? polyResult.value : [];
-    const kalshiMarkets = kalshiResult.status === 'fulfilled' ? kalshiResult.value : [];
-
-    cachedMarkets = [...polyMarkets, ...kalshiMarkets];
-    cacheTimestamp = now;
-
-    console.log(`[Arbitrage API] Cached ${cachedMarkets.length} markets`);
-    return cachedMarkets;
-  } catch (error) {
-    console.error('[Arbitrage API] Failed to fetch markets:', error);
-    // Return stale cache if available
-    return cachedMarkets;
-  }
-}
+import { getMarkets } from '../lib/market-cache';
 
 export default async function handler(
   req: VercelRequest,
