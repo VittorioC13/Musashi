@@ -4,10 +4,14 @@
 
 import { fetchPolymarkets } from '../api/polymarket-client';
 import { fetchKalshiMarkets } from '../api/kalshi-client';
+import { detectArbitrage } from '../api/arbitrage-detector';
+import { ArbitrageOpportunity } from '../types/market';
 
 // v2 key — invalidates the old Polymarket-only cache so combined data is fetched fresh
 const STORAGE_KEY_MARKETS = 'markets_v2';
 const STORAGE_KEY_TS      = 'marketsTs_v2';
+const STORAGE_KEY_ARBITRAGE = 'arbitrage_v1';
+const STORAGE_KEY_ARBITRAGE_TS = 'arbitrageTs_v1';
 const CACHE_TTL_MS        = 30 * 60 * 1000; // 30 minutes
 
 console.log('[Musashi SW] Service worker initialized');
@@ -55,6 +59,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+
+  // Get arbitrage opportunities
+  if (message.type === 'GET_ARBITRAGE') {
+    chrome.storage.local.get([STORAGE_KEY_ARBITRAGE, STORAGE_KEY_ARBITRAGE_TS, STORAGE_KEY_MARKETS]).then((cached) => {
+      const arbitrageTs: number = cached[STORAGE_KEY_ARBITRAGE_TS] ?? 0;
+      const cachedArbitrage = cached[STORAGE_KEY_ARBITRAGE];
+
+      // Return cached arbitrage if fresh (same TTL as markets)
+      if (Array.isArray(cachedArbitrage) && Date.now() - arbitrageTs < CACHE_TTL_MS) {
+        console.log(`[Musashi SW] Returning ${cachedArbitrage.length} cached arbitrage opportunities`);
+        const filtered = filterArbitrage(cachedArbitrage, message.minSpread, message.category);
+        sendResponse({ opportunities: filtered });
+        return;
+      }
+
+      // Compute fresh arbitrage from cached markets
+      const markets = cached[STORAGE_KEY_MARKETS];
+      if (Array.isArray(markets) && markets.length > 0) {
+        const opportunities = detectArbitrage(markets, 0.01); // Lower threshold for storage
+        chrome.storage.local.set({
+          [STORAGE_KEY_ARBITRAGE]: opportunities,
+          [STORAGE_KEY_ARBITRAGE_TS]: Date.now(),
+        });
+        console.log(`[Musashi SW] Computed and cached ${opportunities.length} arbitrage opportunities`);
+        const filtered = filterArbitrage(opportunities, message.minSpread, message.category);
+        sendResponse({ opportunities: filtered });
+      } else {
+        console.log('[Musashi SW] No markets available for arbitrage detection');
+        sendResponse({ opportunities: [] });
+      }
+    }).catch((e) => {
+      console.error('[Musashi SW] GET_ARBITRAGE error:', e);
+      sendResponse({ opportunities: [] });
+    });
+    return true; // keep channel open for async
+  }
 });
 
 // Clear badge when navigating away from Twitter/X
@@ -66,6 +106,28 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
   }
 });
+
+// ── Helper: Filter arbitrage opportunities ───────────────────────────────────
+
+function filterArbitrage(
+  opportunities: ArbitrageOpportunity[],
+  minSpread?: number,
+  category?: string
+): ArbitrageOpportunity[] {
+  let filtered = opportunities;
+
+  if (minSpread !== undefined) {
+    filtered = filtered.filter(op => op.spread >= minSpread);
+  }
+
+  if (category) {
+    filtered = filtered.filter(
+      op => op.polymarket.category === category || op.kalshi.category === category
+    );
+  }
+
+  return filtered;
+}
 
 // ── Market refresh ────────────────────────────────────────────────────────────
 
@@ -101,11 +163,17 @@ async function refreshMarkets() {
     );
 
     if (markets.length > 0) {
+      // Detect arbitrage opportunities
+      const arbitrageOpportunities = detectArbitrage(markets, 0.01); // Low threshold for storage
+      console.log(`[Musashi SW] Detected ${arbitrageOpportunities.length} arbitrage opportunities`);
+
       await chrome.storage.local.set({
         [STORAGE_KEY_MARKETS]: markets,
         [STORAGE_KEY_TS]: Date.now(),
+        [STORAGE_KEY_ARBITRAGE]: arbitrageOpportunities,
+        [STORAGE_KEY_ARBITRAGE_TS]: Date.now(),
       });
-      console.log(`[Musashi SW] Stored ${markets.length} markets`);
+      console.log(`[Musashi SW] Stored ${markets.length} markets + ${arbitrageOpportunities.length} arbitrage opportunities`);
     }
     // Clear any previous ERR badge
     chrome.action.setBadgeText({ text: '' });
