@@ -1,8 +1,9 @@
 // Keyword-based market matcher
-// Uses word-boundary matching, synonym expansion, and phrase extraction
+// Uses word-boundary matching, synonym expansion, phrase extraction, and entity detection
 
 import { Market, MarketMatch } from '../types/market';
 import { mockMarkets } from '../data/mock-markets';
+import { extractEntities, isEntity, ExtractedEntities } from './entity-extractor';
 
 // ─── Stop words ──────────────────────────────────────────────────────────────
 
@@ -915,11 +916,11 @@ function getRecencyBoost(market: Market): number {
 
     // Markets ending within 30 days get a small boost
     if (daysUntilEnd > 0 && daysUntilEnd <= 30) {
-      return 0.05;
+      return 0.1; // Increased from 0.05
     }
     // Markets ending within 7 days get bigger boost
     if (daysUntilEnd > 0 && daysUntilEnd <= 7) {
-      return 0.1;
+      return 0.2; // Increased from 0.1
     }
   } catch (e) {
     // Invalid date, no boost
@@ -961,6 +962,7 @@ interface MatchCounts {
   exactMatches:   number; // tweet token directly matches market keyword
   synonymMatches: number; // tweet token matched via synonym expansion
   titleMatches:   number; // tweet token matches market title word (not in keywords[])
+  entityMatches:  number; // tweet token is a named entity (people, orgs, tickers)
   totalChecked:   number; // number of market keywords evaluated
   multiWordMatches: number; // number of phrase matches (bonus for specificity)
 }
@@ -968,10 +970,11 @@ interface MatchCounts {
 function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[]): number {
   if (r.totalChecked === 0) return 0;
 
-  // Weighted sum: exact > synonym > title
+  // Weighted sum: entity (2x) > exact > synonym > title
   const weighted =
+    r.entityMatches  * 2.0 +   // NEW: Entity matches get 2x weight
     r.exactMatches   * 1.0 +
-    r.synonymMatches * 0.5 +  // Reduced from 0.6 to reduce weak synonym matches
+    r.synonymMatches * 0.5 +   // Reduced from 0.6 to reduce weak synonym matches
     r.titleMatches   * 0.15;   // Reduced from 0.3 to reduce title noise
 
   // Normalize by keyword list length, capped to avoid penalizing markets
@@ -979,7 +982,7 @@ function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[])
   const denominator = Math.min(r.totalChecked, DENOMINATOR_CAP);
   const normalized = weighted / denominator;
 
-  const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
+  const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches + r.entityMatches;
 
   // BALANCED FILTERING: Strong but not nuclear
   // Require EITHER:
@@ -1041,11 +1044,14 @@ export class KeywordMatcher {
     // Filter out very short tweets (likely noise or greetings)
     if (tweetText.trim().length < 20) return [];
 
-    // Step 1: Extract raw tokens (unigrams + bigrams + trigrams) from tweet
+    // Step 1: Extract entities (people, tickers, organizations, dates)
+    const entities = extractEntities(tweetText);
+
+    // Step 2: Extract raw tokens (unigrams + bigrams + trigrams) from tweet
     const rawTokens = this.extractKeywords(tweetText);
     if (rawTokens.length === 0) return [];
 
-    // Step 2: Expand with synonyms — done once, reused for all markets
+    // Step 3: Expand with synonyms — done once, reused for all markets
     const expandedTokens  = expandWithSynonyms(rawTokens);
     const rawTokenSet      = new Set(rawTokens);
     const expandedTokenSet = new Set(expandedTokens);
@@ -1053,7 +1059,7 @@ export class KeywordMatcher {
     const matches: MarketMatch[] = [];
 
     for (const market of this.markets) {
-      const result = this.scoreMarket(market, rawTokenSet, expandedTokenSet);
+      const result = this.scoreMarket(market, rawTokenSet, expandedTokenSet, entities);
       if (result.confidence >= this.minConfidence) {
         matches.push(result);
       }
@@ -1107,12 +1113,14 @@ export class KeywordMatcher {
   private scoreMarket(
     market: Market,
     rawTokenSet: Set<string>,
-    expandedTokenSet: Set<string>
+    expandedTokenSet: Set<string>,
+    entities: ExtractedEntities
   ): MarketMatch {
     const matchedKeywords: string[] = [];
     let exactMatches   = 0;
     let synonymMatches = 0;
     let titleMatches   = 0;
+    let entityMatches  = 0; // NEW: Track entity matches
     let multiWordMatches = 0; // Track phrase matches for prioritization
 
     const explicitKeywords = market.keywords.map(k => k.toLowerCase());
@@ -1123,10 +1131,22 @@ export class KeywordMatcher {
         if (hasWordBoundaryMatch(Array.from(rawTokenSet).join(' '), mk)) {
           exactMatches++;
           multiWordMatches++;
+
+          // Check if this is an entity match
+          if (isEntity(mk, entities)) {
+            entityMatches++;
+          }
+
           matchedKeywords.push(mk);
         } else if (hasWordBoundaryMatch(Array.from(expandedTokenSet).join(' '), mk)) {
           synonymMatches++;
           multiWordMatches++;
+
+          // Check if this is an entity match
+          if (isEntity(mk, entities)) {
+            entityMatches++;
+          }
+
           matchedKeywords.push(mk);
         }
       }
@@ -1141,6 +1161,12 @@ export class KeywordMatcher {
           } else {
             synonymMatches++;
           }
+
+          // Check if this is an entity match (people, tickers, orgs)
+          if (isEntity(mk, entities)) {
+            entityMatches++;
+          }
+
           matchedKeywords.push(mk);
         }
       }
@@ -1153,6 +1179,12 @@ export class KeywordMatcher {
     for (const tt of titleTokens) {
       if (!matchedKeywords.includes(tt) && expandedTokenSet.has(tt)) {
         titleMatches++;
+
+        // Check if this is an entity match
+        if (isEntity(tt, entities)) {
+          entityMatches++;
+        }
+
         matchedKeywords.push(tt);
       }
     }
@@ -1161,6 +1193,7 @@ export class KeywordMatcher {
       exactMatches,
       synonymMatches,
       titleMatches,
+      entityMatches, // NEW: Pass entity matches to scorer
       totalChecked: explicitKeywords.length,
       multiWordMatches,
     }, market, matchedKeywords);
