@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musashi Test - Human vs AI Agent Perspective</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+            color: #60a5fa;
+        }
+
+        .test-section {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #334155;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-input {
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .example-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+
+        .example-btn {
+            background: #1e293b;
+            border: 1px solid #475569;
+        }
+
+        .example-btn:hover {
+            background: #334155;
+        }
+
+        .split-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .perspective {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #334155;
+        }
+
+        .perspective h3 {
+            margin-bottom: 16px;
+            color: #60a5fa;
+            font-size: 18px;
+        }
+
+        .human-view {
+            border-color: #3b82f6;
+        }
+
+        .ai-view {
+            border-color: #8b5cf6;
+        }
+
+        .market-card {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .market-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #f1f5f9;
+        }
+
+        .market-prices {
+            display: flex;
+            gap: 16px;
+            margin: 12px 0;
+        }
+
+        .price {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .price-yes {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+        }
+
+        .price-no {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+        }
+
+        .market-meta {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        .live-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #22c55e;
+            color: white;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .mock-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #64748b;
+            color: white;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        pre {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid #334155;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .signal-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .signal-arbitrage {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .signal-news {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .signal-sentiment {
+            background: #06b6d4;
+            color: white;
+        }
+
+        .urgency-critical {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .urgency-high {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .urgency-medium {
+            color: #3b82f6;
+        }
+
+        .arbitrage-alert {
+            background: rgba(124, 58, 237, 0.1);
+            border: 2px solid #7c3aed;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .arbitrage-title {
+            color: #c4b5fd;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .profit-estimate {
+            font-size: 24px;
+            color: #22c55e;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Musashi Test - Human vs AI Agent Perspective</h1>
+
+        <div class="test-section">
+            <div class="section-title">
+                <span>📝</span>
+                Test Input (Tweet/News Text)
+            </div>
+
+            <div class="example-buttons">
+                <button class="example-btn" onclick="loadExample('btc')">Bitcoin $100k</button>
+                <button class="example-btn" onclick="loadExample('fed')">Fed Rate Cut</button>
+                <button class="example-btn" onclick="loadExample('election')">Trump Election</button>
+                <button class="example-btn" onclick="loadExample('ai')">AI Regulation</button>
+                <button class="example-btn" onclick="loadExample('crypto')">Crypto ETF</button>
+            </div>
+
+            <div class="test-input">
+                <textarea id="testText" rows="4" placeholder="Enter tweet or news text here...">Breaking: Bitcoin just hit $100,000 for the first time in history! Crypto markets surging across the board. #Bitcoin #BTC</textarea>
+            </div>
+
+            <button id="testBtn" onclick="runTest()">🚀 Test Musashi API</button>
+        </div>
+
+        <div class="split-view" id="results" style="display: none;">
+            <div class="perspective human-view">
+                <h3>👤 HUMAN PERSPECTIVE (Extension UI)</h3>
+                <p style="color: #94a3b8; margin-bottom: 16px; font-size: 14px;">
+                    This is what users see when browsing Twitter with Musashi extension installed:
+                </p>
+                <div id="humanView"></div>
+            </div>
+
+            <div class="perspective ai-view">
+                <h3>🤖 AI AGENT PERSPECTIVE (API Response)</h3>
+                <p style="color: #94a3b8; margin-bottom: 16px; font-size: 14px;">
+                    This is the structured JSON that trading bots receive:
+                </p>
+                <div id="aiView"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const examples = {
+            btc: "Breaking: Bitcoin just hit $100,000 for the first time in history! Crypto markets surging across the board. #Bitcoin #BTC",
+            fed: "BREAKING: Federal Reserve announces 0.25% interest rate cut. Jerome Powell says more cuts coming in 2025. Markets rally on the news.",
+            election: "Latest polls show Trump leading in swing states. Will he win the 2024 election? Political analysts divided.",
+            ai: "Congress proposes new AI regulation bill. Will impact OpenAI, Google, and Meta. Vote expected next month.",
+            crypto: "SEC approves spot Bitcoin ETF! BlackRock and Fidelity applications approved. Historic moment for crypto."
+        };
+
+        function loadExample(key) {
+            document.getElementById('testText').value = examples[key];
+        }
+
+        async function runTest() {
+            const text = document.getElementById('testText').value.trim();
+            if (!text) {
+                alert('Please enter some text to test');
+                return;
+            }
+
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'grid';
+
+            document.getElementById('humanView').innerHTML = '<div class="loading">Loading...</div>';
+            document.getElementById('aiView').innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                // Call Musashi API
+                const response = await fetch('https://musashi-api.vercel.app/api/analyze-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+
+                // Render both perspectives
+                renderHumanView(data);
+                renderAIView(data);
+
+            } catch (error) {
+                document.getElementById('humanView').innerHTML = `<div style="color: #ef4444;">Error: ${error.message}</div>`;
+                document.getElementById('aiView').innerHTML = `<div style="color: #ef4444;">Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Test Musashi API';
+            }
+        }
+
+        function renderHumanView(data) {
+            const container = document.getElementById('humanView');
+
+            if (!data.success || !data.data.markets || data.data.markets.length === 0) {
+                container.innerHTML = '<div style="color: #64748b;">No markets found for this text.</div>';
+                return;
+            }
+
+            let html = '';
+
+            // Show arbitrage alert if detected
+            if (data.data.arbitrage && data.data.arbitrage.detected) {
+                const arb = data.data.arbitrage;
+                html += `
+                    <div class="arbitrage-alert">
+                        <div class="arbitrage-title">🚨 ARBITRAGE OPPORTUNITY DETECTED!</div>
+                        <div class="profit-estimate">+${arb.profit_percentage.toFixed(2)}% Profit Potential</div>
+                        <div style="margin-top: 8px; font-size: 14px; color: #e2e8f0;">
+                            Buy on ${arb.buy_platform} at $${arb.buy_price.toFixed(2)}<br>
+                            Sell on ${arb.sell_platform} at $${arb.sell_price.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render market cards
+            data.data.markets.forEach(match => {
+                const market = match.market;
+                const confidence = (match.confidence * 100).toFixed(0);
+
+                html += `
+                    <div class="market-card">
+                        <div class="market-title">
+                            ${market.title}
+                            ${market.isLive ? '<span class="live-badge">LIVE</span>' : '<span class="mock-badge">MOCK</span>'}
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
+                            ${confidence}% match confidence
+                        </div>
+                        <div class="market-prices">
+                            <div class="price price-yes">
+                                <div style="font-size: 12px; color: #86efac;">YES</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #22c55e;">
+                                    ${(market.yesPrice * 100).toFixed(0)}%
+                                </div>
+                                <div style="font-size: 11px; color: #86efac;">
+                                    $${market.yesPrice.toFixed(2)}
+                                </div>
+                            </div>
+                            <div class="price price-no">
+                                <div style="font-size: 12px; color: #fca5a5;">NO</div>
+                                <div style="font-size: 20px; font-weight: 600; color: #ef4444;">
+                                    ${(market.noPrice * 100).toFixed(0)}%
+                                </div>
+                                <div style="font-size: 11px; color: #fca5a5;">
+                                    $${market.noPrice.toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="market-meta">
+                            📊 Platform: ${market.platform.toUpperCase()} |
+                            💰 Volume: $${(market.volume24h / 1000).toFixed(0)}K |
+                            📁 ${market.category}
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <button onclick="window.open('${market.url}', '_blank')" style="width: 100%;">
+                                Trade on ${market.platform} →
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderAIView(data) {
+            const container = document.getElementById('aiView');
+
+            // Create a summary view first
+            let summary = `
+                <div style="margin-bottom: 20px;">
+                    <div class="signal-badge signal-${data.signal_type === 'arbitrage' ? 'arbitrage' : data.signal_type === 'news_event' ? 'news' : 'sentiment'}">
+                        Signal: ${data.signal_type.toUpperCase()}
+                    </div>
+                    <div style="margin: 8px 0;">
+                        <span style="color: #94a3b8;">Urgency:</span>
+                        <span class="urgency-${data.urgency}">${data.urgency.toUpperCase()}</span>
+                    </div>
+                    <div style="margin: 8px 0; font-size: 12px; color: #64748b;">
+                        Event ID: <code>${data.event_id}</code>
+                    </div>
+                    <div style="margin: 8px 0; font-size: 12px; color: #64748b;">
+                        Matched ${data.data.matchCount} market${data.data.matchCount !== 1 ? 's' : ''}
+                    </div>
+                </div>
+            `;
+
+            // Full JSON response
+            summary += `
+                <div style="margin-top: 16px;">
+                    <div style="color: #94a3b8; margin-bottom: 8px; font-size: 14px;">Complete API Response:</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+
+            container.innerHTML = summary;
+        }
+
+        // Auto-run test on load with Bitcoin example
+        window.addEventListener('load', () => {
+            setTimeout(runTest, 500);
+        });
+    </script>
+</body>
+</html>
