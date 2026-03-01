@@ -1,14 +1,26 @@
 // Musashi API Client
 // Handles communication with the Musashi backend API
 
-import { MarketMatch } from '../types/market';
+import { MarketMatch, ArbitrageOpportunity } from '../types/market';
+import { SentimentResult } from '../analysis/sentiment-analyzer';
 
-// Phase 1: Enhanced API response (extension ignores new fields)
-interface AnalyzeTextResponse {
-  // Phase 1: New fields for bot developers (extension ignores these)
+export type SignalType = 'arbitrage' | 'news_event' | 'sentiment_shift' | 'user_interest';
+export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
+export type Direction = 'YES' | 'NO' | 'HOLD';
+
+export interface SuggestedAction {
+  direction: Direction;
+  confidence: number; // 0-1
+  edge: number; // Expected profit edge
+  reasoning: string;
+}
+
+// Enhanced API response with trading signals
+export interface AnalyzeTextResponse {
+  // Trading signal fields
   event_id: string;
-  signal_type: 'arbitrage' | 'news_event' | 'sentiment_shift' | 'user_interest';
-  urgency: 'low' | 'medium' | 'high' | 'critical';
+  signal_type: SignalType;
+  urgency: UrgencyLevel;
 
   // Original fields
   success: boolean;
@@ -16,7 +28,11 @@ interface AnalyzeTextResponse {
     markets: MarketMatch[];
     matchCount: number;
     timestamp: string;
-    metadata?: {  // Phase 1: Processing stats
+    // New enriched fields
+    suggested_action?: SuggestedAction;
+    sentiment?: SentimentResult;
+    arbitrage?: ArbitrageOpportunity;
+    metadata?: {
       processing_time_ms: number;
       sources_checked: number;
       markets_analyzed: number;

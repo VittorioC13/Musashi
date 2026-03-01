@@ -6,6 +6,7 @@ import { fetchPolymarkets } from '../api/polymarket-client';
 import { fetchKalshiMarkets } from '../api/kalshi-client';
 import { detectArbitrage } from '../api/arbitrage-detector';
 import { ArbitrageOpportunity } from '../types/market';
+import { analyzeTextWithArbitrage } from '../analysis/analyze-text';
 
 // v2 key — invalidates the old Polymarket-only cache so combined data is fetched fresh
 const STORAGE_KEY_MARKETS = 'markets_v2';
@@ -92,6 +93,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }).catch((e) => {
       console.error('[Musashi SW] GET_ARBITRAGE error:', e);
       sendResponse({ opportunities: [] });
+    });
+    return true; // keep channel open for async
+  }
+
+  // Analyze text with full signal generation (for bot developers / API)
+  if (message.type === 'ANALYZE_TEXT_WITH_SIGNALS') {
+    chrome.storage.local.get([STORAGE_KEY_MARKETS, STORAGE_KEY_ARBITRAGE]).then(async (cached) => {
+      const markets = cached[STORAGE_KEY_MARKETS] ?? [];
+      const arbitrage = cached[STORAGE_KEY_ARBITRAGE] ?? [];
+
+      if (!Array.isArray(markets) || markets.length === 0) {
+        console.log('[Musashi SW] No markets available for analysis');
+        sendResponse({ signal: null, error: 'No markets loaded' });
+        return;
+      }
+
+      try {
+        const signal = await analyzeTextWithArbitrage(
+          message.text,
+          markets,
+          arbitrage,
+          {
+            minConfidence: message.minConfidence ?? 0.3,
+            maxResults: message.maxResults ?? 5,
+          }
+        );
+        console.log(`[Musashi SW] Generated signal: ${signal.signal_type} (${signal.urgency})`);
+        sendResponse({ signal });
+      } catch (error) {
+        console.error('[Musashi SW] ANALYZE_TEXT_WITH_SIGNALS error:', error);
+        sendResponse({ signal: null, error: String(error) });
+      }
+    }).catch((e) => {
+      console.error('[Musashi SW] ANALYZE_TEXT_WITH_SIGNALS error:', e);
+      sendResponse({ signal: null, error: String(e) });
     });
     return true; // keep channel open for async
   }

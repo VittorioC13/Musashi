@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Musashi Signal Generator Tester</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #1a1a1a;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .input-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 100px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      align-items: center;
+    }
+    button {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .examples {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .example-btn {
+      padding: 6px 12px;
+      background: #e3f2fd;
+      color: #1976D2;
+      border: 1px solid #90CAF9;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .example-btn:hover {
+      background: #BBDEFB;
+    }
+    #loading {
+      color: #666;
+      font-style: italic;
+    }
+    #results {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .signal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .signal-type {
+      font-size: 20px;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .type-arbitrage { background: #E8F5E9; color: #2E7D32; }
+    .type-news_event { background: #FFF3E0; color: #E65100; }
+    .type-sentiment_shift { background: #E3F2FD; color: #1565C0; }
+    .type-user_interest { background: #F3E5F5; color: #6A1B9A; }
+    .urgency {
+      font-size: 18px;
+      font-weight: bold;
+      padding: 6px 14px;
+      border-radius: 6px;
+    }
+    .urgency-critical { background: #FFCDD2; color: #C62828; }
+    .urgency-high { background: #FFE0B2; color: #EF6C00; }
+    .urgency-medium { background: #FFF9C4; color: #F57F17; }
+    .urgency-low { background: #E0E0E0; color: #616161; }
+    .sentiment {
+      margin: 20px 0;
+      padding: 15px;
+      background: #FAFAFA;
+      border-radius: 6px;
+    }
+    .sentiment h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    .sentiment-value {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .bullish { color: #2E7D32; }
+    .bearish { color: #C62828; }
+    .neutral { color: #616161; }
+    .action-box {
+      margin: 20px 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+    }
+    .action-box h3 {
+      margin: 0 0 15px 0;
+      font-size: 18px;
+    }
+    .action-direction {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .action-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .action-detail {
+      background: rgba(255,255,255,0.2);
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .action-detail label {
+      font-size: 11px;
+      opacity: 0.9;
+      font-weight: normal;
+      color: white;
+    }
+    .action-detail value {
+      display: block;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+    .markets {
+      margin: 20px 0;
+    }
+    .markets h3 {
+      margin: 0 0 15px 0;
+      color: #333;
+    }
+    .market-card {
+      background: #FAFAFA;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 4px solid #4CAF50;
+    }
+    .market-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+    .market-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .meta-footer {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 Musashi Signal Generator</h1>
+  <p class="subtitle">Test trading signal generation with sentiment analysis</p>
+
+  <div class="input-section">
+    <label>Tweet / Text to Analyze:</label>
+    <textarea id="textInput" placeholder="Enter a tweet or text to analyze..."></textarea>
+
+    <div class="controls">
+      <button onclick="analyzeText()">Generate Signal</button>
+      <span id="loading" style="display:none;">Analyzing...</span>
+    </div>
+
+    <div style="margin-top: 15px;">
+      <label style="font-size: 12px; color: #666;">Examples:</label>
+      <div class="examples">
+        <button class="example-btn" onclick="setExample('Bitcoin is absolutely mooning! $100k is inevitable!')">Bullish Crypto</button>
+        <button class="example-btn" onclick="setExample('Fed just announced rate cut! This is huge for markets.')">Breaking News</button>
+        <button class="example-btn" onclick="setExample('Trump definitely winning this election, polls are clear')">Political Prediction</button>
+        <button class="example-btn" onclick="setExample('Market crash incoming, sell everything now!')">Bearish Sentiment</button>
+        <button class="example-btn" onclick="setExample('NVDA earnings beat expectations, stock surging')">Tech Earnings</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    function setExample(text) {
+      document.getElementById('textInput').value = text;
+    }
+
+    async function analyzeText() {
+      const text = document.getElementById('textInput').value.trim();
+      const loading = document.getElementById('loading');
+      const results = document.getElementById('results');
+
+      if (!text) {
+        alert('Please enter some text to analyze');
+        return;
+      }
+
+      loading.style.display = 'inline';
+      results.innerHTML = '';
+
+      try {
+        // Send message to service worker
+        const response = await chrome.runtime.sendMessage({
+          type: 'ANALYZE_TEXT_WITH_SIGNALS',
+          text: text,
+          minConfidence: 0.25,
+          maxResults: 3
+        });
+
+        loading.style.display = 'none';
+
+        if (response.error) {
+          results.innerHTML = `<div class="no-results">Error: ${response.error}</div>`;
+          return;
+        }
+
+        const signal = response.signal;
+
+        if (!signal || signal.matches.length === 0) {
+          results.innerHTML = '<div class="no-results">No markets matched this text.</div>';
+          return;
+        }
+
+        // Render signal
+        results.innerHTML = `
+          <div class="signal-header">
+            <span class="signal-type type-${signal.signal_type}">
+              ${formatSignalType(signal.signal_type)}
+            </span>
+            <span class="urgency urgency-${signal.urgency}">
+              ${signal.urgency.toUpperCase()}
+            </span>
+          </div>
+
+          ${signal.sentiment ? `
+            <div class="sentiment">
+              <h3>📊 Sentiment Analysis</h3>
+              <div class="sentiment-value ${signal.sentiment.sentiment}">
+                ${signal.sentiment.sentiment.toUpperCase()}
+                (${(signal.sentiment.confidence * 100).toFixed(0)}% confidence)
+              </div>
+            </div>
+          ` : ''}
+
+          ${signal.suggested_action ? `
+            <div class="action-box">
+              <h3>💡 Suggested Action</h3>
+              <div class="action-direction">${signal.suggested_action.direction}</div>
+              <div>${signal.suggested_action.reasoning}</div>
+              <div class="action-details">
+                <div class="action-detail">
+                  <label>Confidence</label>
+                  <value>${(signal.suggested_action.confidence * 100).toFixed(0)}%</value>
+                </div>
+                <div class="action-detail">
+                  <label>Edge</label>
+                  <value>${(signal.suggested_action.edge * 100).toFixed(1)}%</value>
+                </div>
+                <div class="action-detail">
+                  <label>Signal Type</label>
+                  <value>${formatSignalType(signal.signal_type)}</value>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="markets">
+            <h3>🎯 Matched Markets (${signal.matches.length})</h3>
+            ${signal.matches.map(match => `
+              <div class="market-card">
+                <div class="market-title">${match.market.title}</div>
+                <div class="market-meta">
+                  <span>💰 YES: ${(match.market.yesPrice * 100).toFixed(0)}%</span>
+                  <span>📊 Volume: ${formatVolume(match.market.volume24h)}</span>
+                  <span>🎯 Match: ${(match.confidence * 100).toFixed(0)}%</span>
+                  <span>🏷️ ${match.market.platform}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          ${signal.arbitrage ? `
+            <div style="background: #FFF3E0; padding: 15px; border-radius: 6px; margin-top: 20px;">
+              <strong>🚨 Arbitrage Detected!</strong><br>
+              ${(signal.arbitrage.spread * 100).toFixed(1)}% spread between Polymarket and Kalshi
+            </div>
+          ` : ''}
+
+          <div class="meta-footer">
+            <strong>Event ID:</strong> ${signal.event_id}<br>
+            <strong>Processing Time:</strong> ${signal.metadata.processing_time_ms}ms
+          </div>
+        `;
+
+      } catch (error) {
+        loading.style.display = 'none';
+        results.innerHTML = `<div class="no-results">Error: ${error.message}<br><br>Make sure the Musashi extension is installed and running.</div>`;
+        console.error('Signal generation error:', error);
+      }
+    }
+
+    function formatSignalType(type) {
+      const types = {
+        'arbitrage': '⚡ Arbitrage',
+        'news_event': '📰 News Event',
+        'sentiment_shift': '📈 Sentiment Shift',
+        'user_interest': '👤 User Interest'
+      };
+      return types[type] || type;
+    }
+
+    function formatVolume(volume) {
+      if (volume >= 1000000) {
+        return `$${(volume / 1000000).toFixed(1)}M`;
+      } else if (volume >= 1000) {
+        return `$${(volume / 1000).toFixed(0)}K`;
+      }
+      return `$${volume.toFixed(0)}`;
+    }
+  </script>
+</body>
+</html>
