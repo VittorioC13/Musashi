@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Musashi",
-  "version": "1.0.0",
-  "description": "Overlay prediction market odds from Kalshi on Twitter/X",
+  "version": "2.0.0",
+  "description": "AI-powered prediction market intelligence for Twitter/X - Polymarket & Kalshi signals",
   "permissions": [
     "storage",
     "activeTab",
