@@ -7,7 +7,11 @@
     "dev": "webpack --mode development --watch",
     "clean": "rm -rf dist"
   },
-  "keywords": ["chrome-extension", "prediction-markets", "kalshi"],
+  "keywords": [
+    "chrome-extension",
+    "prediction-markets",
+    "kalshi"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -29,6 +33,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }

@@ -198,14 +198,15 @@ GET /api/markets/movers?minChange=0.05&limit=20&category=us_politics
     "metadata": {
       "processing_time_ms": 45,
       "markets_analyzed": 1234,
-      "price_snapshots_stored": 4567
+      "price_snapshots_stored": 4567,
+      "storage": "Vercel KV (Redis)",
+      "history_retention": "7 days"
     }
-  },
-  "note": "Serverless movers tracking uses in-memory storage..."
+  }
 }
 ```
 
-**Note**: The serverless API uses in-memory price tracking, which resets on each cold start. For persistent movers tracking across time, use the Chrome extension or deploy a stateful backend.
+**Storage**: The API uses Vercel KV (Redis) to persist price snapshots across serverless invocations. Snapshots are stored for 7 days with automatic TTL expiration. See [VERCEL_KV_SETUP.md](./VERCEL_KV_SETUP.md) for setup instructions.
 
 ---
 
@@ -383,13 +384,19 @@ Supported market categories:
 
 ---
 
-## Caching
+## Caching & Storage
 
-- Markets are cached for **5 minutes** on the server
-- Arbitrage opportunities are recalculated on each request
-- Movers use in-memory price snapshots (serverless limitation)
+- **Markets**: Cached for **5 minutes** in-memory (shared across endpoints)
+- **Arbitrage**: Recalculated on each request using cached markets
+- **Movers**: Price snapshots stored in **Vercel KV (Redis)** for **7 days**
 
-For persistent price tracking and movers, use the Chrome extension or deploy a stateful backend.
+### Vercel KV Setup
+
+The movers endpoint requires Vercel KV to persist price history across serverless invocations. See [VERCEL_KV_SETUP.md](./VERCEL_KV_SETUP.md) for setup instructions.
+
+**Environment Variables Required**:
+- `KV_REST_API_URL` - KV REST API endpoint
+- `KV_REST_API_TOKEN` - Authentication token
 
 ---
 

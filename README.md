@@ -340,10 +340,10 @@ vercel --prod
 
 ## Known Limitations
 
-1. **Movers API**: In-memory storage on serverless resets on cold start (use Chrome extension for persistent tracking, or add Vercel KV)
-2. **Sentiment Accuracy**: Naive linear formula (future: scale by source credibility)
-3. **Arbitrage Speed**: O(n×m) matching (future: pre-index by category)
-4. **No Rate Limiting**: Open API with `Access-Control-Allow-Origin: *` (future: API keys)
+1. **Sentiment Accuracy**: Naive linear formula (future: scale by source credibility)
+2. **Arbitrage Speed**: O(n×m) matching (future: pre-index by category)
+3. **No Rate Limiting**: Open API with `Access-Control-Allow-Origin: *` (future: API keys)
+4. **Vercel KV Required**: Movers endpoint requires Vercel KV setup (see [VERCEL_KV_SETUP.md](./VERCEL_KV_SETUP.md))
 
 ---
 
@@ -369,13 +369,18 @@ vercel --prod
 ### API
 
 **Empty movers response**
-- Serverless cold start resets in-memory price history
-- Use Chrome extension for persistent movers tracking
-- Or add Vercel KV for persistent storage
+- First request after deployment (no price history yet)
+- Need 2+ snapshots at least 1 hour apart for movers detection
+- Ensure Vercel KV is configured (see [VERCEL_KV_SETUP.md](./VERCEL_KV_SETUP.md))
+- Lower `minChange` threshold: `?minChange=0.01`
 
 **Slow arbitrage detection**
 - First request fetches markets from Polymarket/Kalshi (~500ms)
 - Subsequent requests use cache (<100ms)
+
+**KV connection errors**
+- Verify `KV_REST_API_URL` and `KV_REST_API_TOKEN` are set in Vercel dashboard
+- Check Vercel logs for detailed error messages
 
 ---
 
@@ -390,10 +395,9 @@ vercel --prod
 - [x] REST API for bot developers
 - [x] Agent SDK with polling callbacks
 - [x] Real Polymarket + Kalshi integration
+- [x] **Vercel KV for movers persistence** (7-day persistent storage)
 
 ### Next Iterations
-
-- [ ] **Vercel KV for movers persistence** (fix serverless limitation)
 - [ ] **Polymarket CLOB price polling** (real-time price updates every 60s)
 - [ ] **Category-based arbitrage filtering** (5-10x speedup)
 - [ ] **API rate limiting** (Vercel Edge Config or API keys)

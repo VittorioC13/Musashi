@@ -1,8 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { kv } from '@vercel/kv';
 import { Market } from '../../src/types/market';
 import { getMarkets } from '../lib/market-cache';
 
-// In-memory price tracking (simple implementation for serverless)
+/**
+ * Vercel KV-based price tracking for persistent movers detection
+ *
+ * NOTE: @vercel/kv is deprecated. For new projects, use Upstash Redis
+ * integration from Vercel Marketplace. Existing KV stores have been
+ * migrated to Upstash Redis automatically.
+ *
+ * Migration path: https://vercel.com/marketplace?category=storage&search=redis
+ */
+
 interface PriceSnapshot {
   marketId: string;
   yesPrice: number;
@@ -18,54 +28,61 @@ interface MarketMover {
   timestamp: number;
 }
 
-// In-memory price history
-let priceHistory: Map<string, PriceSnapshot[]> = new Map();
-const HISTORY_TTL_MS = 24 * 60 * 60 * 1000; // Keep 24 hours
+const HISTORY_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
+const SNAPSHOT_KEY_PREFIX = 'price_history:';
 
 /**
- * Fetch markets and record price snapshots
+ * Get KV key for market price history
  */
-async function getMarketsWithHistory(): Promise<Market[]> {
-  const markets = await getMarkets();
-
-  // Record price snapshots
-  recordPriceSnapshots(markets);
-
-  return markets;
+function getSnapshotKey(marketId: string): string {
+  return `${SNAPSHOT_KEY_PREFIX}${marketId}`;
 }
 
 /**
- * Record price snapshots for markets
+ * Record price snapshots for markets in Vercel KV
  */
-function recordPriceSnapshots(markets: Market[]): void {
+async function recordPriceSnapshots(markets: Market[]): Promise<void> {
   const now = Date.now();
-  const cutoff = now - HISTORY_TTL_MS;
+  const cutoff = now - (HISTORY_TTL_SECONDS * 1000);
 
-  for (const market of markets) {
-    if (!priceHistory.has(market.id)) {
-      priceHistory.set(market.id, []);
-    }
+  // Process markets in batches to avoid rate limits
+  const batchSize = 50;
+  for (let i = 0; i < markets.length; i += batchSize) {
+    const batch = markets.slice(i, i + batchSize);
 
-    const snapshots = priceHistory.get(market.id)!;
+    await Promise.allSettled(
+      batch.map(async (market) => {
+        const key = getSnapshotKey(market.id);
 
-    // Add new snapshot
-    snapshots.push({
-      marketId: market.id,
-      yesPrice: market.yesPrice,
-      timestamp: now,
-    });
+        // Get existing snapshots
+        const snapshots = await kv.get<PriceSnapshot[]>(key) || [];
 
-    // Keep only recent snapshots
-    const filtered = snapshots.filter(s => s.timestamp >= cutoff);
-    priceHistory.set(market.id, filtered);
+        // Add new snapshot
+        const newSnapshot: PriceSnapshot = {
+          marketId: market.id,
+          yesPrice: market.yesPrice,
+          timestamp: now,
+        };
+
+        snapshots.push(newSnapshot);
+
+        // Keep only recent snapshots (within TTL)
+        const filtered = snapshots.filter(s => s.timestamp >= cutoff);
+
+        // Store back to KV with TTL
+        await kv.setex(key, HISTORY_TTL_SECONDS, filtered);
+      })
+    );
   }
 }
 
 /**
- * Get price change for a market
+ * Get price change for a market from KV
  */
-function getPriceChange(marketId: string, hoursAgo: number): number | null {
-  const snapshots = priceHistory.get(marketId);
+async function getPriceChange(marketId: string, hoursAgo: number): Promise<number | null> {
+  const key = getSnapshotKey(marketId);
+  const snapshots = await kv.get<PriceSnapshot[]>(key);
+
   if (!snapshots || snapshots.length < 2) {
     return null;
   }
@@ -94,31 +111,49 @@ function getPriceChange(marketId: string, hoursAgo: number): number | null {
 }
 
 /**
- * Detect market movers
+ * Detect market movers using KV-stored price history
  */
-function detectMovers(markets: Market[], minChange: number): MarketMover[] {
+async function detectMovers(markets: Market[], minChange: number): Promise<MarketMover[]> {
   const movers: MarketMover[] = [];
 
-  for (const market of markets) {
-    const change1h = getPriceChange(market.id, 1);
+  // Process markets in batches for performance
+  const batchSize = 50;
+  for (let i = 0; i < markets.length; i += batchSize) {
+    const batch = markets.slice(i, i + batchSize);
 
-    if (change1h === null) continue;
+    const results = await Promise.allSettled(
+      batch.map(async (market) => {
+        const change1h = await getPriceChange(market.id, 1);
 
-    const absChange = Math.abs(change1h);
-    if (absChange >= minChange) {
-      const snapshots = priceHistory.get(market.id);
-      const previousPrice = snapshots && snapshots.length > 1
-        ? snapshots[snapshots.length - 2].yesPrice
-        : market.yesPrice;
+        if (change1h === null) return null;
 
-      movers.push({
-        market,
-        priceChange1h: change1h,
-        previousPrice,
-        currentPrice: market.yesPrice,
-        direction: change1h > 0 ? 'up' : 'down',
-        timestamp: Date.now(),
-      });
+        const absChange = Math.abs(change1h);
+        if (absChange >= minChange) {
+          const key = getSnapshotKey(market.id);
+          const snapshots = await kv.get<PriceSnapshot[]>(key);
+          const previousPrice = snapshots && snapshots.length > 1
+            ? snapshots[snapshots.length - 2].yesPrice
+            : market.yesPrice;
+
+          return {
+            market,
+            priceChange1h: change1h,
+            previousPrice,
+            currentPrice: market.yesPrice,
+            direction: change1h > 0 ? 'up' : 'down' as 'up' | 'down',
+            timestamp: Date.now(),
+          };
+        }
+
+        return null;
+      })
+    );
+
+    // Collect successful results
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value !== null) {
+        movers.push(result.value);
+      }
     }
   }
 
@@ -126,6 +161,29 @@ function detectMovers(markets: Market[], minChange: number): MarketMover[] {
   movers.sort((a, b) => Math.abs(b.priceChange1h) - Math.abs(a.priceChange1h));
 
   return movers;
+}
+
+/**
+ * Get total snapshot count across all markets (for metadata)
+ */
+async function getTotalSnapshotCount(): Promise<number> {
+  try {
+    // Scan for all price_history keys
+    const keys = await kv.keys(`${SNAPSHOT_KEY_PREFIX}*`);
+
+    if (keys.length === 0) return 0;
+
+    // Get all snapshots
+    const snapshots = await Promise.all(
+      keys.map(key => kv.get<PriceSnapshot[]>(key))
+    );
+
+    // Count total snapshots
+    return snapshots.reduce((sum, arr) => sum + (arr?.length || 0), 0);
+  } catch (error) {
+    console.error('[Movers API] Failed to get snapshot count:', error);
+    return 0;
+  }
 }
 
 export default async function handler(
@@ -182,8 +240,8 @@ export default async function handler(
       return;
     }
 
-    // Get markets and record price snapshots
-    const markets = await getMarketsWithHistory();
+    // Get markets
+    const markets = await getMarkets();
 
     if (markets.length === 0) {
       res.status(503).json({
@@ -193,8 +251,13 @@ export default async function handler(
       return;
     }
 
+    // Record price snapshots to KV (async, don't block response)
+    recordPriceSnapshots(markets).catch(err => {
+      console.error('[Movers API] Failed to record snapshots:', err);
+    });
+
     // Detect movers
-    let movers = detectMovers(markets, minChangeNum);
+    let movers = await detectMovers(markets, minChangeNum);
 
     // Filter by category if specified
     if (category) {
@@ -203,6 +266,9 @@ export default async function handler(
 
     // Limit results
     movers = movers.slice(0, limitNum);
+
+    // Get snapshot count for metadata
+    const snapshotCount = await getTotalSnapshotCount();
 
     // Build response
     const response = {
@@ -219,18 +285,27 @@ export default async function handler(
         metadata: {
           processing_time_ms: Date.now() - startTime,
           markets_analyzed: markets.length,
-          price_snapshots_stored: Array.from(priceHistory.values()).reduce((sum, arr) => sum + arr.length, 0),
+          price_snapshots_stored: snapshotCount,
+          storage: 'Vercel KV (Redis)',
+          history_retention: '7 days',
         },
       },
-      note: 'Serverless movers tracking uses in-memory storage. For persistent tracking across requests, use the Chrome extension or a stateful backend.',
     };
 
     res.status(200).json(response);
   } catch (error) {
     console.error('[Movers API] Error:', error);
+
+    // Check if it's a KV error
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const isKVError = errorMessage.includes('KV') || errorMessage.includes('Redis');
+
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error',
+      error: errorMessage,
+      ...(isKVError && {
+        note: 'Vercel KV storage error. Ensure KV_REST_API_URL and KV_REST_API_TOKEN are set in Vercel environment variables.',
+      }),
     });
   }
 }
