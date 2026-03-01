@@ -3,14 +3,19 @@
  * Prevents duplicate market fetching across endpoints
  */
 
-import { Market } from '../../src/types/market';
+import { Market, ArbitrageOpportunity } from '../../src/types/market';
 import { fetchPolymarkets } from '../../src/api/polymarket-client';
 import { fetchKalshiMarkets } from '../../src/api/kalshi-client';
+import { detectArbitrage } from '../../src/api/arbitrage-detector';
 
 // In-memory cache for markets (5 minutes TTL)
 let cachedMarkets: Market[] = [];
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000;
+
+// In-memory cache for arbitrage opportunities (same TTL as markets)
+let cachedArbitrage: ArbitrageOpportunity[] = [];
+let arbCacheTimestamp = 0;
 
 /**
  * Fetch and cache markets from both platforms
@@ -47,4 +52,27 @@ export async function getMarkets(): Promise<Market[]> {
     // Return stale cache if available
     return cachedMarkets;
   }
+}
+
+/**
+ * Get cached arbitrage opportunities
+ * Recomputes only when market cache is refreshed (same TTL)
+ */
+export async function getArbitrage(minSpread: number = 0.03): Promise<ArbitrageOpportunity[]> {
+  const markets = await getMarkets();
+  const now = Date.now();
+
+  // Return cached if fresh and same spread threshold
+  if (cachedArbitrage.length > 0 && (now - arbCacheTimestamp) < CACHE_TTL_MS) {
+    console.log(`[Arbitrage Cache] Using cached ${cachedArbitrage.length} opportunities`);
+    return cachedArbitrage;
+  }
+
+  // Recompute arbitrage opportunities
+  console.log('[Arbitrage Cache] Computing arbitrage opportunities...');
+  cachedArbitrage = detectArbitrage(markets, minSpread);
+  arbCacheTimestamp = now;
+
+  console.log(`[Arbitrage Cache] Cached ${cachedArbitrage.length} opportunities`);
+  return cachedArbitrage;
 }

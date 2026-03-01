@@ -27,7 +27,13 @@ interface CLOBPriceResponse {
 export async function fetchPolymarketPrice(numericId: string): Promise<number | null> {
   try {
     const url = `${CLOB_API}/price?token_id=${numericId}`;
-    const response = await fetch(url);
+
+    // Add 5-second timeout to prevent hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       console.warn(`[Polymarket CLOB] Failed to fetch price for ${numericId}: HTTP ${response.status}`);
@@ -44,7 +50,11 @@ export async function fetchPolymarketPrice(numericId: string): Promise<number | 
 
     return price;
   } catch (error) {
-    console.error(`[Polymarket CLOB] Error fetching price for ${numericId}:`, error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn(`[Polymarket CLOB] Timeout fetching price for ${numericId}`);
+    } else {
+      console.error(`[Polymarket CLOB] Error fetching price for ${numericId}:`, error);
+    }
     return null;
   }
 }

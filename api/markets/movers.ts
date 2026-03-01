@@ -78,8 +78,9 @@ async function recordPriceSnapshots(markets: Market[]): Promise<void> {
 
 /**
  * Get price change for a market from KV
+ * Returns both the price change and previous price to avoid duplicate KV reads
  */
-async function getPriceChange(marketId: string, hoursAgo: number): Promise<number | null> {
+async function getPriceChange(marketId: string, hoursAgo: number): Promise<{ change: number; previousPrice: number } | null> {
   const key = getSnapshotKey(marketId);
   const snapshots = await kv.get<PriceSnapshot[]>(key);
 
@@ -107,7 +108,10 @@ async function getPriceChange(marketId: string, hoursAgo: number): Promise<numbe
     return null;
   }
 
-  return current.yesPrice - closestSnapshot.yesPrice;
+  return {
+    change: current.yesPrice - closestSnapshot.yesPrice,
+    previousPrice: closestSnapshot.yesPrice,
+  };
 }
 
 /**
@@ -123,24 +127,18 @@ async function detectMovers(markets: Market[], minChange: number): Promise<Marke
 
     const results = await Promise.allSettled(
       batch.map(async (market) => {
-        const change1h = await getPriceChange(market.id, 1);
+        const priceData = await getPriceChange(market.id, 1);
 
-        if (change1h === null) return null;
+        if (priceData === null) return null;
 
-        const absChange = Math.abs(change1h);
+        const absChange = Math.abs(priceData.change);
         if (absChange >= minChange) {
-          const key = getSnapshotKey(market.id);
-          const snapshots = await kv.get<PriceSnapshot[]>(key);
-          const previousPrice = snapshots && snapshots.length > 1
-            ? snapshots[snapshots.length - 2].yesPrice
-            : market.yesPrice;
-
           return {
             market,
-            priceChange1h: change1h,
-            previousPrice,
+            priceChange1h: priceData.change,
+            previousPrice: priceData.previousPrice,
             currentPrice: market.yesPrice,
-            direction: change1h > 0 ? 'up' : 'down' as 'up' | 'down',
+            direction: priceData.change > 0 ? 'up' : 'down' as 'up' | 'down',
             timestamp: Date.now(),
           };
         }

@@ -11,8 +11,8 @@
     },
     "SuggestedAction": {
       "type": "string",
-      "enum": ["buy", "sell", "hold"],
-      "description": "Trading action: buy YES shares, sell (buy NO shares), or hold (wait)"
+      "enum": ["YES", "NO", "HOLD"],
+      "description": "Trading action: YES (buy YES shares), NO (buy NO shares), or HOLD (wait)"
     },
     "Confidence": {
       "type": "number",

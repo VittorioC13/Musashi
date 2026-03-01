@@ -1,9 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { MarketMatch } from '../src/types/market';
 import { KeywordMatcher } from '../src/analysis/keyword-matcher';
 import { generateSignal, TradingSignal } from '../src/analysis/signal-generator';
-import { detectArbitrage } from '../src/api/arbitrage-detector';
-import { getMarkets } from './lib/market-cache';
+import { getMarkets, getArbitrage } from './lib/market-cache';
 
 export default async function handler(
   req: VercelRequest,
@@ -73,8 +71,8 @@ export default async function handler(
     const matcher = new KeywordMatcher(markets, minConfidence, maxResults);
     const matches = matcher.match(text);
 
-    // Detect arbitrage
-    const arbitrageOpportunities = detectArbitrage(markets, 0.03);
+    // Get cached arbitrage opportunities
+    const arbitrageOpportunities = await getArbitrage(0.03);
     let arbitrageForSignal = undefined;
 
     if (matches.length > 0 && arbitrageOpportunities.length > 0) {

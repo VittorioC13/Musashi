@@ -313,8 +313,8 @@ async function pollTopMarketPrices() {
       return;
     }
 
-    // Get top markets by volume
-    const topMarkets = markets
+    // Get top markets by volume (create copy to avoid mutating original array)
+    const topMarkets = [...markets]
       .sort((a, b) => b.volume24h - a.volume24h)
       .slice(0, TOP_MARKETS_COUNT);
 
