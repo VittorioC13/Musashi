@@ -1,57 +1,57 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { AnalyzeTextRequest, AnalyzeTextResponse } from './lib/types/market';
+import { Market, MarketMatch } from '../src/types/market';
+import { KeywordMatcher } from '../src/analysis/keyword-matcher';
+import { generateSignal, TradingSignal } from '../src/analysis/signal-generator';
+import { fetchPolymarkets } from '../src/api/polymarket-client';
+import { fetchKalshiMarkets } from '../src/api/kalshi-client';
+import { detectArbitrage } from '../src/api/arbitrage-detector';
 
-// Lazy import to avoid initialization issues
-let KeywordMatcher: any;
-let matcher: any;
-let phase1Utils: any;
-let priceFetcher: any;
-let arbitrageDetector: any;
+// In-memory cache for markets (5 minutes TTL)
+let cachedMarkets: Market[] = [];
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
-async function initMatcher() {
-  if (!matcher) {
-    try {
-      const module = await import('./lib/analysis/keyword-matcher');
-      KeywordMatcher = module.KeywordMatcher;
-      matcher = new KeywordMatcher();
-    } catch (error) {
-      console.error('Failed to load matcher:', error);
-      throw error;
-    }
+/**
+ * Fetch and cache markets from both platforms
+ */
+async function getMarkets(): Promise<Market[]> {
+  const now = Date.now();
+
+  // Return cached if fresh
+  if (cachedMarkets.length > 0 && (now - cacheTimestamp) < CACHE_TTL_MS) {
+    console.log(`[API] Using cached ${cachedMarkets.length} markets`);
+    return cachedMarkets;
   }
-  return matcher;
-}
 
-async function initPhase1Utils() {
-  if (!phase1Utils) {
-    try {
-      phase1Utils = await import('./lib/analysis/phase1-enhancements');
-    } catch (error) {
-      console.error('Failed to load phase1 utils:', error);
-      throw error;
-    }
-  }
-  return phase1Utils;
-}
+  // Fetch fresh markets
+  console.log('[API] Fetching fresh markets...');
 
-async function initPhase2Utils() {
-  if (!priceFetcher || !arbitrageDetector) {
-    try {
-      priceFetcher = await import('./lib/services/price-fetcher');
-      arbitrageDetector = await import('./lib/analysis/arbitrage-detector');
-    } catch (error) {
-      console.error('Failed to load phase2 utils:', error);
-      throw error;
-    }
+  try {
+    const [polyResult, kalshiResult] = await Promise.allSettled([
+      fetchPolymarkets(500, 10),
+      fetchKalshiMarkets(400, 10),
+    ]);
+
+    const polyMarkets = polyResult.status === 'fulfilled' ? polyResult.value : [];
+    const kalshiMarkets = kalshiResult.status === 'fulfilled' ? kalshiResult.value : [];
+
+    cachedMarkets = [...polyMarkets, ...kalshiMarkets];
+    cacheTimestamp = now;
+
+    console.log(`[API] Cached ${cachedMarkets.length} markets`);
+    return cachedMarkets;
+  } catch (error) {
+    console.error('[API] Failed to fetch markets:', error);
+    // Return stale cache if available
+    return cachedMarkets;
   }
-  return { priceFetcher, arbitrageDetector };
 }
 
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  // CORS headers - allow requests from extension
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -64,153 +64,102 @@ export default async function handler(
 
   // Only accept POST
   if (req.method !== 'POST') {
-    const response = {
+    res.status(405).json({
       event_id: 'evt_error',
-      signal_type: 'user_interest' as const,
-      urgency: 'low' as const,
+      signal_type: 'user_interest',
+      urgency: 'low',
       success: false,
       error: 'Method not allowed. Use POST.',
-    };
-    res.status(405).json(response);
+    });
     return;
   }
 
-  // Track processing time for metadata
   const startTime = Date.now();
 
   try {
-    const body = req.body as AnalyzeTextRequest;
+    const body = req.body as {
+      text: string;
+      minConfidence?: number;
+      maxResults?: number;
+    };
 
     // Validate request
     if (!body.text || typeof body.text !== 'string') {
-      const response = {
+      res.status(400).json({
         event_id: 'evt_error',
-        signal_type: 'user_interest' as const,
-        urgency: 'low' as const,
+        signal_type: 'user_interest',
+        urgency: 'low',
         success: false,
         error: 'Missing or invalid "text" field in request body.',
-      };
-      res.status(400).json(response);
+      });
       return;
     }
 
-    // Extract parameters
-    const { text, minConfidence, maxResults } = body;
+    const { text, minConfidence = 0.3, maxResults = 5 } = body;
 
-    // Initialize matcher and Phase 1 utilities
-    const matcher = await initMatcher();
-    const utils = await initPhase1Utils();
+    // Get markets
+    const markets = await getMarkets();
 
-    // Apply custom settings if provided
-    if (minConfidence !== undefined) {
-      matcher.setMinConfidence(minConfidence);
+    if (markets.length === 0) {
+      res.status(503).json({
+        event_id: 'evt_error',
+        signal_type: 'user_interest',
+        urgency: 'low',
+        success: false,
+        error: 'No markets available. Service temporarily unavailable.',
+      });
+      return;
     }
-    if (maxResults !== undefined) {
-      matcher.setMaxResults(maxResults);
-    }
 
-    // Perform matching
+    // Match markets
+    const matcher = new KeywordMatcher(markets, minConfidence, maxResults);
     const matches = matcher.match(text);
 
-    // Get total markets count for metadata
-    const allMarkets = matcher.getAllMarkets ? matcher.getAllMarkets() : [];
-    const totalMarkets = allMarkets.length || 124; // Fallback to known count
+    // Detect arbitrage
+    const arbitrageOpportunities = detectArbitrage(markets, 0.03);
+    let arbitrageForSignal = undefined;
 
-    // Phase 2: Fetch live prices for matched markets
-    const phase2 = await initPhase2Utils();
-    let livePricesFetched = 0;
-
-    // Update each match with live prices
-    for (const match of matches) {
-      try {
-        const livePrice = await phase2.priceFetcher.fetchLivePrice(match.market);
-
-        // Update market with live data
-        match.market.yesPrice = livePrice.yesPrice;
-        match.market.noPrice = livePrice.noPrice;
-        match.market.isLive = livePrice.isLive;
-
-        if (livePrice.volume !== undefined) {
-          match.market.volume24h = livePrice.volume;
-        }
-
-        if (livePrice.isLive) {
-          livePricesFetched++;
-        }
-      } catch (error) {
-        // If price fetch fails, keep mock prices
-        console.error(`Failed to fetch price for ${match.market.id}:`, error);
-      }
+    if (matches.length > 0 && arbitrageOpportunities.length > 0) {
+      const topMatchId = matches[0].market.id;
+      arbitrageForSignal = arbitrageOpportunities.find(
+        arb => arb.polymarket.id === topMatchId || arb.kalshi.id === topMatchId
+      );
     }
 
-    // Phase 2: Detect arbitrage if multiple platforms present
-    let arbitrage = undefined;
-    if (matches.length >= 2) {
-      // Check if we have different platforms
-      const platforms = new Set(matches.map(m => m.market.platform));
-      if (platforms.size > 1) {
-        // Find Polymarket and Kalshi prices
-        const polymarketMatch = matches.find(m => m.market.platform === 'polymarket');
-        const kalshiMatch = matches.find(m => m.market.platform === 'kalshi');
+    // Generate trading signal
+    const signal: TradingSignal = generateSignal(text, matches, arbitrageForSignal);
 
-        if (polymarketMatch && kalshiMatch) {
-          arbitrage = phase2.arbitrageDetector.detectArbitrage(
-            polymarketMatch.market.yesPrice,
-            kalshiMatch.market.yesPrice
-          );
-        }
-      }
-    }
-
-    // Phase 1: Generate enhanced fields for agents
-    const eventId = utils.generateEventId(text, matches);
-    let signalType = utils.classifySignal(text, matches);
-
-    // Phase 2: Override signal type if arbitrage detected
-    if (arbitrage && arbitrage.detected) {
-      signalType = 'arbitrage';
-    }
-
-    let urgency = utils.determineUrgency(signalType, matches, text);
-
-    // Phase 2: Set urgency to critical if arbitrage detected
-    if (signalType === 'arbitrage') {
-      urgency = 'critical';
-    }
-
-    const metadata = utils.calculateMetadata(startTime, totalMarkets, matches.length);
-    // Add Phase 2 metadata
-    (metadata as any).live_prices_fetched = livePricesFetched;
-    (metadata as any).cache_hits = matches.length - livePricesFetched;
-
-    // Build enhanced response
-    const response: AnalyzeTextResponse = {
-      // Phase 1: Enhanced fields for bot developers
-      event_id: eventId,
-      signal_type: signalType,
-      urgency: urgency,
-
-      // Original fields
+    // Build response
+    const response = {
+      event_id: signal.event_id,
+      signal_type: signal.signal_type,
+      urgency: signal.urgency,
       success: true,
       data: {
-        markets: matches,
-        matchCount: matches.length,
+        markets: signal.matches,
+        matchCount: signal.matches.length,
         timestamp: new Date().toISOString(),
-        metadata: metadata,  // Phase 1 & 2: Processing statistics
-        arbitrage: arbitrage,  // Phase 2: Arbitrage detection
+        suggested_action: signal.suggested_action,
+        sentiment: signal.sentiment,
+        arbitrage: signal.arbitrage,
+        metadata: {
+          processing_time_ms: Date.now() - startTime,
+          sources_checked: 2, // Polymarket + Kalshi
+          markets_analyzed: markets.length,
+          model_version: 'v2.0.0',
+        },
       },
     };
 
     res.status(200).json(response);
   } catch (error) {
-    console.error('Error in analyze-text:', error);
-    const response = {
+    console.error('[API] Error in analyze-text:', error);
+    res.status(500).json({
       event_id: 'evt_error',
-      signal_type: 'user_interest' as const,
-      urgency: 'low' as const,
+      signal_type: 'user_interest',
+      urgency: 'low',
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
-    };
-    res.status(500).json(response);
+    });
   }
 }
