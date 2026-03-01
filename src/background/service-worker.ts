@@ -8,6 +8,7 @@ import { detectArbitrage } from '../api/arbitrage-detector';
 import { ArbitrageOpportunity, Market } from '../types/market';
 import { analyzeTextWithArbitrage } from '../analysis/analyze-text';
 import { recordBulkSnapshots, getMovers, cleanupOldHistory } from '../api/price-tracker';
+import { parallelFetchPolymarketPrices } from '../api/polymarket-price-poller';
 
 // v2 key — invalidates the old Polymarket-only cache so combined data is fetched fresh
 const STORAGE_KEY_MARKETS = 'markets_v2';
@@ -299,7 +300,7 @@ function startPricePolling() {
 
 /**
  * Poll prices for the top markets by volume
- * Only fetches lightweight price data, not full market list
+ * Fetches fresh prices from Polymarket CLOB API for lightweight updates
  */
 async function pollTopMarketPrices() {
   try {
@@ -319,17 +320,31 @@ async function pollTopMarketPrices() {
 
     console.log(`[Musashi SW] Polling prices for top ${topMarkets.length} markets`);
 
-    // For now, we'll record the current prices as snapshots
-    // In a production system, you'd fetch fresh prices from the APIs here
-    // But since we're already fetching full markets every 5 min, we'll use those
+    // Fetch fresh prices from Polymarket CLOB API
+    // Only Polymarket markets with numericId will be updated
+    // Kalshi markets keep their cached prices until next full refresh
+    const freshMarkets = await parallelFetchPolymarketPrices(topMarkets, 5);
 
-    // Record snapshots
-    await recordBulkSnapshots(topMarkets);
+    // Update cached markets with fresh prices
+    const marketMap = new Map(markets.map(m => [m.id, m]));
+    for (const fresh of freshMarkets) {
+      marketMap.set(fresh.id, fresh);
+    }
+    const updatedMarkets = Array.from(marketMap.values());
 
-    console.log(`[Musashi SW] Recorded ${topMarkets.length} price snapshots`);
+    // Save updated markets back to cache
+    await chrome.storage.local.set({
+      [STORAGE_KEY_MARKETS]: updatedMarkets,
+    });
+
+    // Record snapshots with fresh prices
+    await recordBulkSnapshots(freshMarkets);
+
+    const polyCount = freshMarkets.filter(m => m.platform === 'polymarket').length;
+    console.log(`[Musashi SW] Recorded ${freshMarkets.length} price snapshots (${polyCount} Polymarket, ${freshMarkets.length - polyCount} Kalshi)`);
 
     // Detect movers in the background (this will cache them)
-    const movers = await getMovers(markets, {
+    const movers = await getMovers(updatedMarkets, {
       minChange: 0.05,
       timeframe: '1h',
       limit: 20,

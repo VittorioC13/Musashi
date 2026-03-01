@@ -310,6 +310,7 @@ vercel --prod
 - **Market Matching**: <100ms (1000+ markets)
 - **API Latency**: <500ms (includes market fetching + analysis)
 - **Cache Hit Rate**: ~90% (5-min TTL on markets)
+- **Price Polling**: ~10 seconds for top 50 markets (5 concurrent requests)
 
 ---
 
@@ -329,11 +330,22 @@ vercel --prod
 - Configurable thresholds: `minSpread` (default 3%), `minConfidence` (default 50%)
 - Returns profit potential and trading direction
 
+### Real-Time Price Polling (Chrome Extension)
+
+- **Lightweight Updates**: Fetches only price data via Polymarket CLOB API (not full market objects)
+- **Top Markets**: Polls top 50 markets by volume every 60 seconds
+- **Parallel Fetching**: 5 concurrent requests for fast updates (~10 seconds total)
+- **Cache Integration**: Updates cached markets with fresh prices
+- **Price History**: Snapshots stored in chrome.storage for 7 days
+- **Movers Detection**: Real-time detection with actual price changes
+
+**CLOB API**: `GET https://clob.polymarket.com/price?token_id={numericId}`
+
 ### Scalability Considerations
 
 - **Market Fetching**: Shared cache across API endpoints (5-min TTL)
 - **Arbitrage Matching**: O(n×m) currently, future: category-based filtering for 5-10x speedup
-- **Price History**: Chrome storage (7 days), serverless in-memory (24 hours)
+- **Price History**: Chrome storage (7 days), Vercel KV (7 days)
 - **Rate Limiting**: None currently, future: Vercel Edge Config
 
 ---
@@ -396,9 +408,9 @@ vercel --prod
 - [x] Agent SDK with polling callbacks
 - [x] Real Polymarket + Kalshi integration
 - [x] **Vercel KV for movers persistence** (7-day persistent storage)
+- [x] **Polymarket CLOB price polling** (real-time price updates every 60s)
 
 ### Next Iterations
-- [ ] **Polymarket CLOB price polling** (real-time price updates every 60s)
 - [ ] **Category-based arbitrage filtering** (5-10x speedup)
 - [ ] **API rate limiting** (Vercel Edge Config or API keys)
 - [ ] **Sentiment credibility scaling** (verified accounts, follower count)
