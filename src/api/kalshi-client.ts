@@ -92,7 +92,7 @@ export async function fetchKalshiMarkets(
         throw new Error(`Kalshi API responded with ${resp.status}`);
       }
 
-      const data: KalshiMarketsResponse = await resp.json();
+      const data = await resp.json() as KalshiMarketsResponse;
       if (!Array.isArray(data.markets)) {
         throw new Error('Unexpected Kalshi API response shape');
       }

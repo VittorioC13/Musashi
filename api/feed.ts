@@ -1,0 +1,209 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { kv } from '@vercel/kv';
+import type { AnalyzedTweet, FeedResponse, AccountCategory } from '../src/types/feed';
+
+// ─── KV Storage Keys ───────────────────────────────────────────────────────
+
+const FEED_LATEST_KEY = 'feed:latest';
+
+function getTweetKey(tweetId: string): string {
+  return `tweet:${tweetId}`;
+}
+
+function getCategoryKey(category: AccountCategory): string {
+  return `feed:category:${category}`;
+}
+
+// ─── Main Handler ──────────────────────────────────────────────────────────
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const startTime = Date.now();
+
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Only allow GET
+  if (req.method !== 'GET') {
+    res.status(405).json({
+      success: false,
+      error: 'Method not allowed. Use GET.',
+    });
+    return;
+  }
+
+  try {
+    // Parse query parameters
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const category = req.query.category as AccountCategory | undefined;
+    const minUrgency = req.query.minUrgency as string | undefined;
+    const since = req.query.since as string | undefined;
+    const cursor = req.query.cursor as string | undefined;
+
+    // Validate parameters
+    if (limit < 1 || limit > 100) {
+      res.status(400).json({
+        success: false,
+        error: 'Limit must be between 1 and 100.',
+      });
+      return;
+    }
+
+    if (category && !isValidCategory(category)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid category. Must be one of: politics, economics, crypto, technology, geopolitics, sports, breaking_news, finance`,
+      });
+      return;
+    }
+
+    if (minUrgency && !isValidUrgency(minUrgency)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid minUrgency. Must be one of: low, medium, high, critical`,
+      });
+      return;
+    }
+
+    // Step 1: Get feed index (category-specific or latest)
+    const feedKey = category ? getCategoryKey(category) : FEED_LATEST_KEY;
+    const feedIndex = await kv.get<string[]>(feedKey) || [];
+
+    if (feedIndex.length === 0) {
+      // Empty feed (not an error)
+      const response: FeedResponse = {
+        success: true,
+        data: {
+          tweets: [],
+          count: 0,
+          timestamp: new Date().toISOString(),
+          filters: {
+            limit,
+            category,
+            minUrgency,
+            since,
+          },
+          metadata: {
+            processing_time_ms: Date.now() - startTime,
+            total_in_kv: 0,
+          },
+        },
+      };
+
+      // Cache for 30 seconds
+      res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate');
+      res.status(200).json(response);
+      return;
+    }
+
+    // Step 2: Apply cursor pagination
+    let startIndex = 0;
+    if (cursor) {
+      const cursorIndex = feedIndex.indexOf(cursor);
+      if (cursorIndex !== -1) {
+        startIndex = cursorIndex + 1; // Start after cursor
+      }
+    }
+
+    // Step 3: Slice for limit
+    const tweetIds = feedIndex.slice(startIndex, startIndex + limit);
+
+    // Step 4: Batch fetch tweets from KV
+    const tweets = await Promise.all(
+      tweetIds.map(id => kv.get<AnalyzedTweet>(getTweetKey(id)))
+    );
+
+    // Step 5: Filter nulls (expired tweets)
+    let validTweets = tweets.filter(t => t !== null) as AnalyzedTweet[];
+
+    // Step 6: Apply filters (urgency, since)
+    if (minUrgency) {
+      const urgencyOrder = ['low', 'medium', 'high', 'critical'];
+      const minIndex = urgencyOrder.indexOf(minUrgency);
+      validTweets = validTweets.filter(t => urgencyOrder.indexOf(t.urgency) >= minIndex);
+    }
+
+    if (since) {
+      try {
+        const sinceDate = new Date(since);
+        validTweets = validTweets.filter(t => new Date(t.tweet.created_at) > sinceDate);
+      } catch (error) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid "since" timestamp. Use ISO 8601 format.',
+        });
+        return;
+      }
+    }
+
+    // Step 7: Determine next cursor
+    const nextCursor = tweetIds.length === limit ? tweetIds[tweetIds.length - 1] : undefined;
+
+    // Step 8: Build response
+    const response: FeedResponse = {
+      success: true,
+      data: {
+        tweets: validTweets,
+        count: validTweets.length,
+        timestamp: new Date().toISOString(),
+        cursor: nextCursor,
+        filters: {
+          limit,
+          category,
+          minUrgency,
+          since,
+        },
+        metadata: {
+          processing_time_ms: Date.now() - startTime,
+          total_in_kv: feedIndex.length,
+        },
+      },
+    };
+
+    // Cache for 30 seconds at edge
+    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate');
+    res.status(200).json(response);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Feed API] Error:', errorMessage);
+
+    const isKVError = errorMessage.includes('KV') || errorMessage.includes('Redis');
+
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+      ...(isKVError && {
+        note: 'Vercel KV storage error. Ensure KV_REST_API_URL and KV_REST_API_TOKEN are set.',
+      }),
+    });
+  }
+}
+
+// ─── Validation Helpers ────────────────────────────────────────────────────
+
+function isValidCategory(category: string): category is AccountCategory {
+  return [
+    'politics',
+    'economics',
+    'crypto',
+    'technology',
+    'geopolitics',
+    'sports',
+    'breaking_news',
+    'finance',
+  ].includes(category);
+}
+
+function isValidUrgency(urgency: string): boolean {
+  return ['low', 'medium', 'high', 'critical'].includes(urgency);
+}

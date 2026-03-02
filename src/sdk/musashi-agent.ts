@@ -31,6 +31,9 @@ export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
 export type Direction = 'YES' | 'NO' | 'HOLD';
 export type Platform = 'polymarket' | 'kalshi';
 
+// Import feed types
+export type { AnalyzedTweet, TwitterAccount, GetFeedOptions } from '../types/feed';
+
 export interface Market {
   id: string;
   platform: Platform;
@@ -120,6 +123,25 @@ export interface HealthStatus {
   services: {
     polymarket: { status: string; markets?: number };
     kalshi: { status: string; markets?: number };
+  };
+}
+
+export interface FeedStats {
+  timestamp: string;
+  last_collection: string;
+  tweets: {
+    last_1h: number;
+    last_6h: number;
+    last_24h: number;
+  };
+  by_category: Record<string, number>;
+  by_urgency: Record<string, number>;
+  top_markets: Array<{
+    market: Market;
+    mention_count: number;
+  }>;
+  metadata: {
+    processing_time_ms: number;
   };
 }
 
@@ -409,6 +431,152 @@ export class MusashiAgent {
         }
       } catch (error) {
         console.error('[Musashi Agent] Movers monitoring error:', error);
+      }
+    }, intervalMs);
+
+    return () => clearInterval(interval);
+  }
+
+  /**
+   * Get analyzed tweet feed
+   *
+   * @param options - Feed filter options
+   * @returns Array of analyzed tweets
+   *
+   * @example
+   * ```typescript
+   * const feed = await agent.getFeed({
+   *   limit: 20,
+   *   category: 'crypto',
+   *   minUrgency: 'high'
+   * });
+   *
+   * for (const tweet of feed) {
+   *   console.log(`@${tweet.tweet.author}: ${tweet.tweet.text}`);
+   *   console.log(`Matches: ${tweet.matches.length}, Urgency: ${tweet.urgency}`);
+   * }
+   * ```
+   */
+  async getFeed(options?: any): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set('limit', options.limit.toString());
+    if (options?.category) params.set('category', options.category);
+    if (options?.minUrgency) params.set('minUrgency', options.minUrgency);
+    if (options?.since) params.set('since', options.since);
+    if (options?.cursor) params.set('cursor', options.cursor);
+
+    const response = await this.request(`/api/feed?${params.toString()}`);
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch feed');
+    }
+
+    return response.data.tweets;
+  }
+
+  /**
+   * Get feed statistics
+   *
+   * @returns Feed statistics
+   *
+   * @example
+   * ```typescript
+   * const stats = await agent.getFeedStats();
+   * console.log(`Tweets in last hour: ${stats.tweets.last_1h}`);
+   * console.log(`Top market: ${stats.top_markets[0].market.title}`);
+   * ```
+   */
+  async getFeedStats(): Promise<FeedStats> {
+    const response = await this.request('/api/feed/stats');
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch stats');
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Get curated Twitter account list
+   *
+   * @returns Array of monitored accounts
+   *
+   * @example
+   * ```typescript
+   * const accounts = await agent.getFeedAccounts();
+   * console.log(`Monitoring ${accounts.length} accounts`);
+   * console.log(`High priority: ${accounts.filter(a => a.priority === 'high').length}`);
+   * ```
+   */
+  async getFeedAccounts(): Promise<any[]> {
+    const response = await this.request('/api/feed/accounts');
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch accounts');
+    }
+
+    return response.data.accounts;
+  }
+
+  /**
+   * Monitor feed with polling and invoke callback on new tweets
+   *
+   * Automatically tracks the last seen timestamp and only calls callback
+   * when new tweets are available. Polls every intervalMs.
+   *
+   * @param callback - Function to call with new tweets
+   * @param options - Feed filter options
+   * @param intervalMs - Polling interval in milliseconds (default: 30000 = 30s)
+   * @returns Unsubscribe function to stop monitoring
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = agent.onFeed(
+   *   (tweets) => {
+   *     for (const tweet of tweets) {
+   *       if (tweet.urgency === 'critical') {
+   *         console.log(`CRITICAL: @${tweet.tweet.author}: ${tweet.tweet.text}`);
+   *         executeTrade(tweet.suggested_action);
+   *       }
+   *     }
+   *   },
+   *   { category: 'crypto', minUrgency: 'high' },
+   *   30000 // Poll every 30 seconds
+   * );
+   *
+   * // Later: stop monitoring
+   * unsubscribe();
+   * ```
+   */
+  onFeed(
+    callback: (tweets: any[]) => void,
+    options?: any,
+    intervalMs: number = 30000
+  ): () => void {
+    let lastSeen: string | undefined = new Date().toISOString();
+
+    const interval = setInterval(async () => {
+      try {
+        const tweets = await this.getFeed({
+          ...options,
+          since: lastSeen,
+          limit: options?.limit || 100, // Fetch up to 100 new tweets
+        });
+
+        if (tweets.length > 0) {
+          // Update lastSeen to most recent tweet
+          const newestTimestamp = tweets.reduce((latest, tweet) => {
+            const tweetTime = new Date(tweet.tweet.created_at);
+            return tweetTime > new Date(latest) ? tweet.tweet.created_at : latest;
+          }, lastSeen || new Date(0).toISOString());
+
+          lastSeen = newestTimestamp;
+
+          // Call callback with new tweets
+          callback(tweets);
+        }
+      } catch (error) {
+        console.error('[Musashi Agent] Feed monitoring error:', error);
       }
     }, intervalMs);
 

@@ -15,6 +15,24 @@
     {
       "source": "/api/health",
       "destination": "/api/health.ts"
+    },
+    {
+      "source": "/api/feed",
+      "destination": "/api/feed.ts"
+    },
+    {
+      "source": "/api/feed/stats",
+      "destination": "/api/feed/stats.ts"
+    },
+    {
+      "source": "/api/feed/accounts",
+      "destination": "/api/feed/accounts.ts"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/collect-tweets",
+      "schedule": "*/2 * * * *"
     }
   ],
   "headers": [

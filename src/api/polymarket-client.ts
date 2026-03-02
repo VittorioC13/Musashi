@@ -83,7 +83,7 @@ export async function fetchPolymarkets(
         throw new Error(`Polymarket API responded with ${resp.status}`);
       }
 
-      const data: PolymarketMarket[] = await resp.json();
+      const data = await resp.json() as PolymarketMarket[];
       if (!Array.isArray(data)) {
         throw new Error('Unexpected Polymarket API response shape');
       }
