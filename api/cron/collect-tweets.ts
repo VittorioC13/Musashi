@@ -21,6 +21,7 @@ import type {
 
 const FEED_LATEST_KEY = 'feed:latest';
 const CRON_METADATA_KEY = 'cron:last_run';
+const ACCOUNT_ROTATION_KEY = 'cron:account_batch';
 const TWEET_TTL_SECONDS = 48 * 60 * 60; // 48 hours
 
 function getTweetKey(tweetId: string): string {
@@ -86,21 +87,33 @@ export default async function handler(
 
     console.log(`[Cron] Loaded ${markets.length} markets`);
 
-    // Step 2: Initialize KeywordMatcher
-    const matcher = new KeywordMatcher(markets, 0.3, 5);
+    // Step 2: Initialize KeywordMatcher (lowered threshold from 0.3 to 0.2)
+    const matcher = new KeywordMatcher(markets, 0.2, 5);
 
     // Step 3: Get arbitrage opportunities (for signal enrichment)
     const arbitrageOpportunities = await getArbitrage(0.03);
     console.log(`[Cron] Loaded ${arbitrageOpportunities.length} arbitrage opportunities`);
 
-    // Step 4: Fetch tweets from high-priority accounts first (limit to 10 per run to avoid rate limits)
+    // Step 4: Implement round-robin account rotation (10 accounts per run, rotating through all 45)
     const allHighPriorityAccounts = getHighPriorityAccounts();
-    const highPriorityAccounts = allHighPriorityAccounts.slice(0, 10); // Only fetch 10 accounts per run
-    console.log(`[Cron] Fetching from ${highPriorityAccounts.length} high-priority accounts (of ${allHighPriorityAccounts.length} total)`);
+    const ACCOUNTS_PER_BATCH = 10;
+    const totalBatches = Math.ceil(allHighPriorityAccounts.length / ACCOUNTS_PER_BATCH);
+
+    // Get current batch index from KV (or start at 0)
+    let currentBatch = await kv.get<number>(ACCOUNT_ROTATION_KEY) || 0;
+    const startIndex = currentBatch * ACCOUNTS_PER_BATCH;
+    const endIndex = Math.min(startIndex + ACCOUNTS_PER_BATCH, allHighPriorityAccounts.length);
+    const highPriorityAccounts = allHighPriorityAccounts.slice(startIndex, endIndex);
+
+    // Increment batch for next run (wrap around)
+    const nextBatch = (currentBatch + 1) % totalBatches;
+    await kv.set(ACCOUNT_ROTATION_KEY, nextBatch);
+
+    console.log(`[Cron] Fetching batch ${currentBatch + 1}/${totalBatches} (accounts ${startIndex + 1}-${endIndex} of ${allHighPriorityAccounts.length} high-priority)`);
 
     const highPriorityResults = await twitterClient.batchFetchTimelines(
       highPriorityAccounts.map(a => a.username),
-      3 // Last 3 minutes (overlap buffer)
+      15 // Last 15 minutes (increased from 3 for better coverage)
     );
 
     // Step 5: Analyze and store tweets
@@ -126,8 +139,8 @@ export default async function handler(
         // Analyze tweet through existing pipeline
         const matches = matcher.match(rawTweet.text);
 
-        // Skip tweets with no market matches or low confidence
-        if (matches.length === 0 || matches[0].confidence < 0.3) {
+        // Skip tweets with no market matches or low confidence (lowered from 0.3 to 0.2)
+        if (matches.length === 0 || matches[0].confidence < 0.2) {
           continue;
         }
 
@@ -197,7 +210,7 @@ export default async function handler(
       //       totalAnalyzed++;
 
       //       const matches = matcher.match(rawTweet.text);
-      //       if (matches.length === 0 || matches[0].confidence < 0.3) {
+      //       if (matches.length === 0 || matches[0].confidence < 0.2) {
       //         continue;
       //       }
 
