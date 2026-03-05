@@ -90,14 +90,31 @@ export class TwitterClient {
       await this.checkRateLimit(response);
 
       if (!response.ok) {
+        // Get error details from Twitter API
+        let errorBody = '';
+        try {
+          const errorData = await response.json();
+          errorBody = JSON.stringify(errorData);
+        } catch {
+          errorBody = await response.text();
+        }
+
+        console.error(`[Twitter Client] getUserId failed for @${username}: Status ${response.status}, Body: ${errorBody}`);
+
         if (response.status === 404) {
           throw new TwitterApiError(
             `User @${username} not found (suspended, deleted, or username changed)`,
             404
           );
         }
+        if (response.status === 401) {
+          throw new TwitterApiError(
+            `Twitter API authentication failed - check TWITTER_BEARER_TOKEN`,
+            401
+          );
+        }
         throw new TwitterApiError(
-          `Failed to get user ID for @${username}`,
+          `Failed to get user ID for @${username}: ${response.status} - ${errorBody}`,
           response.status
         );
       }
