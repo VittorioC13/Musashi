@@ -1,7 +1,7 @@
 # Musashi v3 Deployment Status
 
-**Date**: March 2, 2026
-**Status**: ⚠️ DEPLOYED - DEBUGGING TWEET COLLECTION
+**Date**: March 5, 2026
+**Status**: 🚨 BLOCKED - TWITTER API CREDITS DEPLETED
 **API URL**: https://musashi-api.vercel.app
 
 ---
@@ -46,37 +46,32 @@
 
 ---
 
-## ⚠️ Current Issues
+## 🚨 CRITICAL BLOCKER
 
-### 1. Rate Limiting Challenge
-**Problem**: Twitter API has strict rate limits:
-- User Lookup: 300 requests / 15 minutes
-- Timeline Fetch: 900 requests / 15 minutes
+### Twitter API Credits Depleted (Status 402)
 
-**Current Solution**:
-- Reduced from 40 accounts to **10 accounts per cron run**
-- Disabled medium-priority account fetching
-- Results in ~20 API calls per run (well within limits)
+**Error**: `CreditsDepleted` - Account [2028379355290779648] has $0 balance
 
-**Status**: Cron now completes with 200 status, no more rate limit errors
+**Impact**:
+- ❌ Cannot fetch ANY tweets (all accounts fail)
+- ❌ 0 tweets collected, 0 analyzed, 0 stored
+- ✅ Everything else works perfectly (markets, arbitrage, matching, signals)
 
-### 2. No Tweets Being Stored Yet
-**Possible Reasons**:
-1. **Low Market Coverage** - Only ~500 prediction markets to match against
-2. **High Confidence Threshold** - Only storing tweets with ≥0.3 match confidence
-3. **Recent Tweets Only** - Fetching last 3 minutes (accounts may not tweet that frequently)
-4. **Account Issues** - ~30% of accounts failing (suspended/deleted/renamed)
+**Root Cause Diagnosis** (March 5, 2026):
+- Added detailed error logging to Twitter client
+- Identified HTTP 402 errors with explicit "CreditsDepleted" message
+- Twitter API requires payment for user lookups and timeline fetches
+- Free tier (1,500 tweets/month) exhausted or never active
 
-**What's Working**:
+**All Other Systems Working**:
 - ✅ Cron runs every 2 minutes successfully
-- ✅ Markets fetched (500 from Polymarket/Kalshi)
-- ✅ Twitter API authentication working
-- ✅ 70% of accounts accessible
+- ✅ Round-robin account rotation (10 per batch, 5 batches)
+- ✅ Markets cached: 659 total (490 Polymarket + 169 Kalshi)
+- ✅ Arbitrage detection working (0 current opportunities)
+- ✅ Signal generation pipeline ready
+- ✅ Confidence threshold lowered to 0.2
+- ✅ Tweet timeframe increased to 15 minutes
 - ✅ Analysis pipeline functional
-
-**What's Not Working**:
-- ❌ No tweets matching prediction markets (or very few)
-- ❌ No tweets being stored in KV yet
 
 ---
 
@@ -136,31 +131,47 @@ cron:last_run                 → CronRunMetadata (48h TTL)
 
 ---
 
-## 🚀 Next Steps (For Next Session)
+## 🚀 Next Steps - TWITTER API CREDITS REQUIRED
 
-### Immediate Priorities
+### Immediate Priority: Resolve Twitter API Access
 
-1. **Investigate Why No Tweets Are Being Stored**
-   - Check cron logs in detail to see how many tweets are being fetched
-   - Check how many tweets pass the confidence threshold
-   - Review match confidence scores
-   - Consider lowering confidence threshold from 0.3 to 0.2
+**Option A: Add Twitter API Credits** ⭐ RECOMMENDED
+- Cost: ~$100/month for Basic tier or pay-as-you-go
+- Portal: https://developer.twitter.com/en/portal/billing
+- Impact: System will work immediately after payment
+- ROI: One good arbitrage trade pays for itself
 
-2. **Expand Market Coverage**
-   - Current: ~500 markets (might be too narrow)
-   - Check why Kalshi returns 0 simple markets
-   - Consider including more Polymarket markets
-   - Verify market cache is refreshing properly
+**Option B: Downgrade to Free Tier** (Not Recommended)
+- Limit: 1,500 tweets/month = ~50/day
+- Would need to reduce from 71 accounts to ~5 accounts
+- Check once per hour instead of every 2 minutes
+- Severely limited coverage
 
-3. **Optimize Account Rotation**
-   - Currently only fetching first 10 accounts every run
-   - Implement round-robin rotation to cover all 71 accounts
-   - Example: Run 1 fetches accounts 1-10, Run 2 fetches 11-20, etc.
+**Option C: Alternative Data Sources**
+- RSS feeds (free but delayed)
+- Web scraping (legal concerns)
+- Other social APIs
+- Requires code rewrite
 
-4. **Add User ID Caching**
-   - Cache Twitter user IDs in KV to avoid repeated lookups
-   - Reduces API calls by ~50%
-   - Would allow fetching from more accounts per run
+### Recent Improvements (March 5, 2026) ✅
+
+1. **Lowered Confidence Threshold** (0.3 → 0.2)
+   - Commit: e5c1ed2
+   - More tweets will match markets when API works
+
+2. **Implemented Round-Robin Account Rotation**
+   - Commit: e5c1ed2
+   - All 45 high-priority accounts covered every 10 minutes
+   - Batch tracking stored in KV
+
+3. **Increased Tweet Timeframe** (3 → 15 minutes)
+   - Commit: e5c1ed2
+   - Better coverage for infrequent tweeters
+
+4. **Added Detailed Twitter Error Logging**
+   - Commit: cde0c71
+   - Logs actual HTTP status and response bodies
+   - How we diagnosed the credits issue
 
 ### Testing & Debugging
 
