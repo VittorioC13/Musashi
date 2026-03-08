@@ -5,7 +5,10 @@
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "agent": "tsx cli/index.ts",
+    "agent:build": "esbuild cli/index.ts --bundle --platform=node --outfile=dist/agent.js --external:blessed",
+    "agent:start": "node dist/agent.js"
   },
   "keywords": [
     "chrome-extension",
@@ -22,18 +25,22 @@
     "autoprefixer": "^10.4.19",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
+    "esbuild": "^0.27.3",
     "postcss": "^8.4.38",
     "postcss-loader": "^8.1.1",
     "style-loader": "^4.0.0",
     "tailwindcss": "^3.4.4",
     "ts-loader": "^9.5.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.5.2",
     "vercel": "^33.5.5",
     "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@types/blessed": "^0.1.27",
     "@vercel/kv": "^3.0.0",
+    "blessed": "^0.1.81",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }
