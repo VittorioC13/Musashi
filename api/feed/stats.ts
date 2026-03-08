@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import type { AnalyzedTweet, FeedStats, CronRunMetadata, AccountCategory } from '../../src/types/feed';
-import { batchGetFromKV, getCached } from '../lib/cache-helper';
+import { batchGetFromKV, getCached, setFeedCache, getFeedCache, getFeedCacheTimestamp } from '../lib/cache-helper';
 
 // ─── KV Storage Keys ───────────────────────────────────────────────────────
 
@@ -64,6 +64,9 @@ export default async function handler(
       60000 // Cache for 60 seconds
     );
 
+    // Cache in memory for fallback
+    setFeedCache(STATS_CACHE_KEY, cachedStats, 5 * 60 * 1000); // 5 min TTL
+
     // Return cached stats
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     res.status(200).json(cachedStats);
@@ -74,9 +77,37 @@ export default async function handler(
     const isKVError = errorMessage.includes('KV') || errorMessage.includes('Redis');
     const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('max requests limit');
 
+    // Fallback to in-memory cache on quota error
+    if (isQuotaError) {
+      const cachedStats = getFeedCache(STATS_CACHE_KEY);
+      const cachedAt = getFeedCacheTimestamp(STATS_CACHE_KEY);
+
+      if (cachedStats) {
+        // Modify response to indicate it's cached
+        const fallbackStats = {
+          ...cachedStats,
+          data: {
+            ...cachedStats.data,
+            metadata: {
+              ...cachedStats.data.metadata,
+              cached: true,
+              cached_at: cachedAt ? new Date(cachedAt).toISOString() : null,
+              cache_age_seconds: cachedAt ? Math.floor((Date.now() - cachedAt) / 1000) : null,
+            },
+          },
+        };
+
+        console.log(`[Feed Stats API] Serving cached stats (age: ${fallbackStats.data.metadata.cache_age_seconds}s)`);
+        res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+        res.status(200).json(fallbackStats);
+        return;
+      }
+    }
+
+    // No cache available, return error
     res.status(isQuotaError ? 503 : 500).json({
       success: false,
-      error: isQuotaError ? 'Service temporarily unavailable due to quota limits' : errorMessage,
+      error: isQuotaError ? 'Service temporarily unavailable due to quota limits. No cached data available.' : errorMessage,
       ...(isKVError && {
         note: 'Vercel KV storage error. Ensure KV_REST_API_URL and KV_REST_API_TOKEN are set.',
       }),

@@ -123,4 +123,48 @@ export function clearMemoryCache(): void {
   memoryCache.clear();
 }
 
+// ─── Feed-Specific Cache ──────────────────────────────────────────────────────
+
+/**
+ * Feed-specific cache for fallback when KV quota is exhausted
+ * Persists across warm lambda invocations
+ */
+const feedCache = new Map<string, {
+  data: any;
+  timestamp: number;
+  ttl: number;
+}>();
+
+/**
+ * Store feed data in memory for fallback
+ */
+export function setFeedCache(key: string, data: any, ttlMs: number): void {
+  feedCache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl: ttlMs,
+  });
+}
+
+/**
+ * Get feed data from memory cache
+ * Returns data even if expired (better to serve stale data than no data)
+ */
+export function getFeedCache(key: string): any | null {
+  const entry = feedCache.get(key);
+  if (!entry) return null;
+
+  // Always return cached data, even if expired
+  // (better to serve stale data than no data when KV is down)
+  return entry.data;
+}
+
+/**
+ * Get timestamp when feed data was cached
+ */
+export function getFeedCacheTimestamp(key: string): number | null {
+  const entry = feedCache.get(key);
+  return entry ? entry.timestamp : null;
+}
+
 export { memoryCache };
