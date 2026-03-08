@@ -114,62 +114,83 @@ export default function TerminalDemo() {
             <div className={`text-[#888] transition-opacity duration-300 ${visibleLinesRight >= 1 ? 'opacity-100' : 'opacity-0'}`}>
               <span className="text-[#888]">$</span> <span className="text-[#4a9eff]">npm run agent</span>
             </div>
-            <div className={`text-[#888] transition-opacity duration-300 ${visibleLinesRight >= 1 ? 'opacity-100' : 'opacity-0'}`}>
-              <span className="text-[#888]">$</span> <span className="text-[#4a9eff]">npm run agent</span>
-            </div>
             <div className={`text-[#666] italic transition-opacity duration-300 ${visibleLinesRight >= 2 ? 'opacity-100' : 'opacity-0'}`}>
-              // Terminal UI launches - 6 panels, real-time data
+              // Launches terminal dashboard with 6 panels
             </div>
-            <div className={`mt-3 p-3 bg-[#0d0d0d] border border-[#27c93f]/30 rounded text-[11px] transition-opacity duration-300 ${visibleLinesRight >= 3 ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="text-[#4a9eff]">┌─ FEED ──────────┬─ ARBITRAGE ────┐</div>
-              <div className="text-[#e0e0e0]">│ <span className="text-[#888]">@Reuters • 2m</span> │ <span className="text-[#ffbd2e]">Bitcoin Up/Down</span>│</div>
-              <div className="text-[#e0e0e0]">│ <span className="text-[#fff]">Trump ends...</span>  │ <span className="text-[#888]">YES</span>   <span className="text-[#888]">NO</span>     │</div>
-              <div className="text-[#e0e0e0]">│ <span className="text-[#ff0]">• HIGH</span> <span className="text-[#888]">• 95%</span> │ <span className="text-[#0f0]">37%</span>  <span className="text-[#f00]">64%</span>    │</div>
-              <div className="text-[#4a9eff]">├─ MOVERS ────────┼─ STATS ────────┤</div>
-              <div className="text-[#e0e0e0]">│ <span className="text-[#0f0]">↑</span> <span className="text-[#fff]">Iran Ceasefire</span>│ <span className="text-[#888]">Tweets: 124</span>   │</div>
-              <div className="text-[#e0e0e0]">│ <span className="text-[#0f0]">+12.3%</span> <span className="text-[#888]">(55→67%)</span>│ <span className="text-[#888]">Politics: 45</span>  │</div>
-              <div className="text-[#4a9eff]">└─ LOGS ──────────────────────────┘</div>
-              <div className="text-[#27c93f]">  [15:23:45] ✓ Updated: 3 new tweets</div>
-              <div className="text-[#ffbd2e]">  [15:23:40] ⚠ Found arb: 5.2% spread</div>
+
+            {/* Terminal UI Mockup */}
+            <div className={`mt-3 bg-[#0a0a0a] border border-[#27c93f]/30 rounded p-3 text-[10px] leading-relaxed transition-opacity duration-300 ${visibleLinesRight >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Feed Panel */}
+                <div className="border border-[#4a9eff]/30 p-2 rounded bg-[#0a0a0a]">
+                  <div className="text-[#4a9eff] font-bold mb-1 text-[10px]">FEED</div>
+                  <div className="text-[#888] text-[9px] leading-relaxed">@Reuters • 2m</div>
+                  <div className="text-[#e0e0e0] text-[9px] leading-relaxed">Trump ends...</div>
+                  <div className="text-[#ffbd2e] text-[9px] leading-relaxed">• HIGH • 95%</div>
+                </div>
+
+                {/* Arbitrage Panel */}
+                <div className="border border-[#ffbd2e]/30 p-2 rounded bg-[#0a0a0a]">
+                  <div className="text-[#ffbd2e] font-bold mb-1 text-[10px]">ARBITRAGE</div>
+                  <div className="text-[#e0e0e0] text-[9px] leading-relaxed">Bitcoin Up/Down</div>
+                  <div className="flex gap-2 text-[9px] leading-relaxed">
+                    <span className="text-[#27c93f]">YES 37%</span>
+                    <span className="text-[#ff5f56]">NO 64%</span>
+                  </div>
+                  <div className="text-[#ffbd2e] text-[9px] leading-relaxed">Spread: 5.2%</div>
+                </div>
+
+                {/* Movers Panel */}
+                <div className="border border-[#ff5f56]/30 p-2 rounded bg-[#0a0a0a]">
+                  <div className="text-[#ff5f56] font-bold mb-1 text-[10px]">MOVERS</div>
+                  <div className="text-[#27c93f] text-[9px] leading-relaxed">↑ Iran Ceasefire</div>
+                  <div className="text-[#27c93f] text-[9px] leading-relaxed">+12.3% (55→67%)</div>
+                </div>
+
+                {/* Stats Panel */}
+                <div className="border border-[#888]/30 p-2 rounded bg-[#0a0a0a]">
+                  <div className="text-[#888] font-bold mb-1 text-[10px]">STATS</div>
+                  <div className="text-[#e0e0e0] text-[9px] leading-relaxed">Tweets: 124</div>
+                  <div className="text-[#e0e0e0] text-[9px] leading-relaxed">Politics: 45</div>
+                </div>
+              </div>
+
+              {/* Logs */}
+              <div className="border border-[#27c93f]/30 p-2 rounded mt-3 bg-[#0a0a0a]">
+                <div className="text-[#27c93f] font-bold mb-1 text-[10px]">LOGS</div>
+                <div className="text-[#27c93f] text-[9px] leading-relaxed">[15:23:45] ✓ Updated: 3 new</div>
+                <div className="text-[#ffbd2e] text-[9px] leading-relaxed">[15:23:40] ⚠ Arb: 5.2%</div>
+              </div>
             </div>
-            <div className={`mt-4 text-[#666] italic transition-opacity duration-300 ${visibleLinesRight >= 4 ? 'opacity-100' : 'opacity-0'}`}>
-              // Agent sees: Feed, Arbitrage, Movers, Stats, Logs
+            <div className={`mt-3 text-[#666] italic transition-opacity duration-300 ${visibleLinesRight >= 4 ? 'opacity-100' : 'opacity-0'}`}>
+              // Real-time data visualization, not JSON
             </div>
-            <div className={`mt-3 text-[#27c93f] transition-opacity duration-300 ${visibleLinesRight >= 5 ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`mt-2 text-[#27c93f] transition-opacity duration-300 ${visibleLinesRight >= 5 ? 'opacity-100' : 'opacity-0'}`}>
               Polling every 5s. Parallel fetch (300ms).
             </div>
             <div className={`mt-2 text-[#e0e0e0] transition-opacity duration-300 ${visibleLinesRight >= 6 ? 'opacity-100' : 'opacity-0'}`}>
               → 10 tweets analyzed
             </div>
             <div className={`text-[#e0e0e0] transition-opacity duration-300 ${visibleLinesRight >= 7 ? 'opacity-100' : 'opacity-0'}`}>
-              → 2 arbitrage opportunities (5.2%, 3.1%)
+              → 2 arbitrage opportunities found
             </div>
             <div className={`text-[#e0e0e0] transition-opacity duration-300 ${visibleLinesRight >= 8 ? 'opacity-100' : 'opacity-0'}`}>
               → 4 markets moving significantly
             </div>
-            <div className={`mt-4 text-[#666] italic transition-opacity duration-300 ${visibleLinesRight >= 9 ? 'opacity-100' : 'opacity-0'}`}>
-              // No prompts. Pure data visualization.
+            <div className={`mt-3 text-[#666] italic transition-opacity duration-300 ${visibleLinesRight >= 9 ? 'opacity-100' : 'opacity-0'}`}>
+              // Agent monitors dashboard, executes autonomously
             </div>
-            <div className={`mt-4 text-[#e0e0e0] transition-opacity duration-300 ${visibleLinesRight >= 10 ? 'opacity-100' : 'opacity-0'}`}>
-              Agent monitors dashboard, detects patterns.
+            <div className={`mt-3 text-[#e0e0e0] transition-opacity duration-300 ${visibleLinesRight >= 10 ? 'opacity-100' : 'opacity-0'}`}>
+              No prompts. No chat. Pure data.
             </div>
             <div className={`mt-2 text-[#27c93f] transition-opacity duration-300 ${visibleLinesRight >= 11 ? 'opacity-100' : 'opacity-0'}`}>
               → PolyDepth-style YES/NO splits
             </div>
             <div className={`mt-2 text-[#27c93f] transition-opacity duration-300 ${visibleLinesRight >= 12 ? 'opacity-100' : 'opacity-0'}`}>
-              → Color-coded urgency (critical, high, medium)
+              → Color-coded urgency levels
             </div>
-            <div className={`mt-5 transition-opacity duration-300 ${visibleLinesRight >= 13 ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`mt-4 transition-opacity duration-300 ${visibleLinesRight >= 13 ? 'opacity-100' : 'opacity-0'}`}>
               <span className="text-[#888]">Agent:</span> <span className="text-[#27c93f]">*executes trade on 5.2% spread*</span>
-            </div>
-            <div className={`mt-4 text-[#666] italic transition-opacity duration-300 ${visibleLinesRight >= 9 ? 'opacity-100' : 'opacity-0'}`}>
-              // Agent parses JSON, executes trades autonomously
-            </div>
-            <div className={`mt-4 text-[#e0e0e0] transition-opacity duration-300 ${visibleLinesRight >= 10 ? 'opacity-100' : 'opacity-0'}`}>
-              No prompts. No chat. Just structured data flowing.
-            </div>
-            <div className={`mt-2 text-[#27c93f] transition-opacity duration-300 ${visibleLinesRight >= 11 ? 'opacity-100' : 'opacity-0'}`}>
-              → 659 markets • 24 tweets/hour • 4 endpoints • real-time
             </div>
             <div className={`mt-5 transition-opacity duration-300 ${visibleLinesRight >= 12 ? 'opacity-100' : 'opacity-0'}`}>
               <span className="text-[#888]">Agent:</span> <span className="text-[#e0e0e0]">*executes trade on Kalshi*</span>
