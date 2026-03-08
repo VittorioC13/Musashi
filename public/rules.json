@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "remove" },
+        { "header": "Referer", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "api.elections.kalshi.com/*",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "remove" },
+        { "header": "Referer", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "gamma-api.polymarket.com/*",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "remove" },
+        { "header": "Referer", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "clob.polymarket.com/*",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]
