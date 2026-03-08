@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import type { AnalyzedTweet, FeedResponse, AccountCategory } from '../src/types/feed';
+import { batchGetFromKV } from './lib/cache-helper';
 
 // ─── KV Storage Keys ───────────────────────────────────────────────────────
 
@@ -118,10 +119,10 @@ export default async function handler(
     // Step 3: Slice for limit
     const tweetIds = feedIndex.slice(startIndex, startIndex + limit);
 
-    // Step 4: Batch fetch tweets from KV
-    const tweets = await Promise.all(
-      tweetIds.map(id => kv.get<AnalyzedTweet>(getTweetKey(id)))
-    );
+    // Step 4: OPTIMIZED: Batch fetch tweets from KV using mget
+    // This reduces N requests → 1 request (massive improvement!)
+    const tweetKeys = tweetIds.map(id => getTweetKey(id));
+    const tweets = await batchGetFromKV<AnalyzedTweet>(kv, tweetKeys);
 
     // Step 5: Filter nulls (expired tweets)
     let validTweets = tweets.filter(t => t !== null) as AnalyzedTweet[];
@@ -170,18 +171,19 @@ export default async function handler(
       },
     };
 
-    // Cache for 30 seconds at edge
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate');
+    // Cache for 60 seconds at edge with stale-while-revalidate
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     res.status(200).json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Feed API] Error:', errorMessage);
 
     const isKVError = errorMessage.includes('KV') || errorMessage.includes('Redis');
+    const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('max requests limit');
 
-    res.status(500).json({
+    res.status(isQuotaError ? 503 : 500).json({
       success: false,
-      error: errorMessage,
+      error: isQuotaError ? 'Service temporarily unavailable due to quota limits' : errorMessage,
       ...(isKVError && {
         note: 'Vercel KV storage error. Ensure KV_REST_API_URL and KV_REST_API_TOKEN are set.',
       }),
