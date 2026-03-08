@@ -22,3 +22,13 @@ export interface MarketMatch {
   confidence: number; // 0.0 to 1.0
   matchedKeywords: string[];
 }
+
+export interface ArbitrageOpportunity {
+  polymarket: Market;
+  kalshi: Market;
+  spread: number; // Absolute price difference (e.g., 0.05 = 5%)
+  profitPotential: number; // Expected profit per $1 invested
+  direction: 'buy_poly_sell_kalshi' | 'buy_kalshi_sell_poly';
+  confidence: number; // 0-1, how confident we are this is the same event
+  matchReason: string; // Why we think these are the same market
+}

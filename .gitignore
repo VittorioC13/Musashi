@@ -1,8 +1,13 @@
 # Dependencies
 node_modules/
+package-lock.json
 
 # Build output
 dist/
+dist.rar
+
+# Vercel
+.vercel
 
 # OS files
 .DS_Store
@@ -17,7 +22,13 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+logs/
 
 # Environment
 .env
 .env.local
+.env.production
+
+# Chrome extension keys
+*.crx
+*.pem

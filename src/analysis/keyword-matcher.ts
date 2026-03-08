@@ -1,8 +1,8 @@
 // Keyword-based market matcher
-// Uses word-boundary matching, synonym expansion, and phrase extraction
+// Uses word-boundary matching, synonym expansion, phrase extraction, and entity detection
 
 import { Market, MarketMatch } from '../types/market';
-import { mockMarkets } from '../data/mock-markets';
+import { extractEntities, isEntity, ExtractedEntities } from './entity-extractor';
 
 // ─── Stop words ──────────────────────────────────────────────────────────────
 
@@ -46,6 +46,10 @@ const DOMAIN_NOISE_WORDS = new Set([
   'amp', 'quote', 'retweet', 'reply', 'comment', 'comments',
   'video', 'photo', 'image', 'link', 'article', 'story',
   'must', 'need', 'want', 'lol', 'lmao', 'wtf', 'omg', 'tbh',
+  // Generic numbers/quantifiers that match everywhere
+  'one', 'two', 'three', 'four', 'five',
+  // Ultra-generic verbs that appear in every context
+  'got', 'get', 'came', 'come', 'went', 'join', 'joined',
 ]);
 
 // ─── Synonym / alias map ─────────────────────────────────────────────────────
@@ -909,13 +913,13 @@ function getRecencyBoost(market: Market): number {
     const now = new Date();
     const daysUntilEnd = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
+    // Markets ending within 7 days get bigger boost (check first!)
+    if (daysUntilEnd > 0 && daysUntilEnd <= 7) {
+      return 0.2; // Increased from 0.1
+    }
     // Markets ending within 30 days get a small boost
     if (daysUntilEnd > 0 && daysUntilEnd <= 30) {
-      return 0.05;
-    }
-    // Markets ending within 7 days get bigger boost
-    if (daysUntilEnd > 0 && daysUntilEnd <= 7) {
-      return 0.1;
+      return 0.1; // Increased from 0.05
     }
   } catch (e) {
     // Invalid date, no boost
@@ -957,6 +961,7 @@ interface MatchCounts {
   exactMatches:   number; // tweet token directly matches market keyword
   synonymMatches: number; // tweet token matched via synonym expansion
   titleMatches:   number; // tweet token matches market title word (not in keywords[])
+  entityMatches:  number; // tweet token is a named entity (people, orgs, tickers)
   totalChecked:   number; // number of market keywords evaluated
   multiWordMatches: number; // number of phrase matches (bonus for specificity)
 }
@@ -964,10 +969,11 @@ interface MatchCounts {
 function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[]): number {
   if (r.totalChecked === 0) return 0;
 
-  // Weighted sum: exact > synonym > title
+  // Weighted sum: entity (2x) > exact > synonym > title
   const weighted =
+    r.entityMatches  * 2.0 +   // NEW: Entity matches get 2x weight
     r.exactMatches   * 1.0 +
-    r.synonymMatches * 0.5 +  // Reduced from 0.6 to reduce weak synonym matches
+    r.synonymMatches * 0.5 +   // Reduced from 0.6 to reduce weak synonym matches
     r.titleMatches   * 0.15;   // Reduced from 0.3 to reduce title noise
 
   // Normalize by keyword list length, capped to avoid penalizing markets
@@ -975,21 +981,25 @@ function computeScore(r: MatchCounts, market: Market, matchedKeywords: string[])
   const denominator = Math.min(r.totalChecked, DENOMINATOR_CAP);
   const normalized = weighted / denominator;
 
-  const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches;
+  const totalMatched = r.exactMatches + r.synonymMatches + r.titleMatches + r.entityMatches;
 
-  // STRICT FILTERING: Require at least 2 matches for confidence
-  // Exception: single exact match with normalized ≥ 0.4 (very specific markets)
-  if (totalMatched === 1) {
-    // Only allow single matches if:
-    // 1. It's an exact match (not synonym/title)
-    // 2. Normalized score is very high (≥ 0.4, meaning market has ≤2 focused keywords)
-    if (r.exactMatches === 0 || normalized < 0.4) {
+  // BALANCED FILTERING: Strong but not nuclear
+  // Require EITHER:
+  // - 1+ exact match AND 2+ total matches (exact + synonym/title)
+  // - OR 2+ synonym matches AND 3+ total matches
+
+  if (r.exactMatches >= 1) {
+    // If we have at least 1 exact match, require 2+ total matches
+    if (totalMatched < 2) {
       return 0;
     }
-  }
-
-  // If only title matches (no exact or synonym), require at least 3 title words
-  if (r.exactMatches === 0 && r.synonymMatches === 0 && r.titleMatches < 3) {
+  } else if (r.synonymMatches >= 2) {
+    // If no exact matches, need 2+ synonym matches AND 3+ total
+    if (totalMatched < 3) {
+      return 0;
+    }
+  } else {
+    // No exact matches and <2 synonym matches = reject
     return 0;
   }
 
@@ -1017,7 +1027,7 @@ export class KeywordMatcher {
   private maxResults: number;
 
   constructor(
-    markets: Market[] = mockMarkets,
+    markets: Market[] = [],
     minConfidence: number = 0.22, // Raised from 0.12 to reduce false positives
     maxResults: number = 5
   ) {
@@ -1033,11 +1043,14 @@ export class KeywordMatcher {
     // Filter out very short tweets (likely noise or greetings)
     if (tweetText.trim().length < 20) return [];
 
-    // Step 1: Extract raw tokens (unigrams + bigrams + trigrams) from tweet
+    // Step 1: Extract entities (people, tickers, organizations, dates)
+    const entities = extractEntities(tweetText);
+
+    // Step 2: Extract raw tokens (unigrams + bigrams + trigrams) from tweet
     const rawTokens = this.extractKeywords(tweetText);
     if (rawTokens.length === 0) return [];
 
-    // Step 2: Expand with synonyms — done once, reused for all markets
+    // Step 3: Expand with synonyms — done once, reused for all markets
     const expandedTokens  = expandWithSynonyms(rawTokens);
     const rawTokenSet      = new Set(rawTokens);
     const expandedTokenSet = new Set(expandedTokens);
@@ -1045,7 +1058,7 @@ export class KeywordMatcher {
     const matches: MarketMatch[] = [];
 
     for (const market of this.markets) {
-      const result = this.scoreMarket(market, rawTokenSet, expandedTokenSet);
+      const result = this.scoreMarket(market, rawTokenSet, expandedTokenSet, entities);
       if (result.confidence >= this.minConfidence) {
         matches.push(result);
       }
@@ -1099,12 +1112,14 @@ export class KeywordMatcher {
   private scoreMarket(
     market: Market,
     rawTokenSet: Set<string>,
-    expandedTokenSet: Set<string>
+    expandedTokenSet: Set<string>,
+    entities: ExtractedEntities
   ): MarketMatch {
     const matchedKeywords: string[] = [];
     let exactMatches   = 0;
     let synonymMatches = 0;
     let titleMatches   = 0;
+    let entityMatches  = 0; // NEW: Track entity matches
     let multiWordMatches = 0; // Track phrase matches for prioritization
 
     const explicitKeywords = market.keywords.map(k => k.toLowerCase());
@@ -1115,10 +1130,22 @@ export class KeywordMatcher {
         if (hasWordBoundaryMatch(Array.from(rawTokenSet).join(' '), mk)) {
           exactMatches++;
           multiWordMatches++;
+
+          // Check if this is an entity match
+          if (isEntity(mk, entities)) {
+            entityMatches++;
+          }
+
           matchedKeywords.push(mk);
         } else if (hasWordBoundaryMatch(Array.from(expandedTokenSet).join(' '), mk)) {
           synonymMatches++;
           multiWordMatches++;
+
+          // Check if this is an entity match
+          if (isEntity(mk, entities)) {
+            entityMatches++;
+          }
+
           matchedKeywords.push(mk);
         }
       }
@@ -1133,6 +1160,12 @@ export class KeywordMatcher {
           } else {
             synonymMatches++;
           }
+
+          // Check if this is an entity match (people, tickers, orgs)
+          if (isEntity(mk, entities)) {
+            entityMatches++;
+          }
+
           matchedKeywords.push(mk);
         }
       }
@@ -1145,6 +1178,12 @@ export class KeywordMatcher {
     for (const tt of titleTokens) {
       if (!matchedKeywords.includes(tt) && expandedTokenSet.has(tt)) {
         titleMatches++;
+
+        // Check if this is an entity match
+        if (isEntity(tt, entities)) {
+          entityMatches++;
+        }
+
         matchedKeywords.push(tt);
       }
     }
@@ -1153,6 +1192,7 @@ export class KeywordMatcher {
       exactMatches,
       synonymMatches,
       titleMatches,
+      entityMatches, // NEW: Pass entity matches to scorer
       totalChecked: explicitKeywords.length,
       multiWordMatches,
     }, market, matchedKeywords);

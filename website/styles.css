@@ -1,0 +1,441 @@
+/* ============================================
+   MUSASHI - AI Agent Intelligence Demo
+   Inspired by taste.ink's elegant design
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-primary: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-muted: #666666;
+    --terminal-bg: #1e1e1e;
+    --terminal-text: #d4d4d4;
+    --green: #4ade80;
+    --red: #ef4444;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --success: #10b981;
+    --error: #ef4444;
+    --critical: #ff6b6b;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 4rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
+main {
+    padding-top: 100px;
+}
+
+.hero {
+    text-align: center;
+    padding: 4rem 2rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    font-weight: 600;
+}
+
+.headline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 3rem;
+    color: var(--text-primary);
+}
+
+.headline .highlight {
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ============================================
+   COMPARISON SECTION
+   ============================================ */
+
+.comparison {
+    max-width: 1600px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+}
+
+.terminal-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+
+.terminal {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.terminal:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
+}
+
+.terminal.without {
+    opacity: 0.85;
+}
+
+.terminal-header {
+    background: #323232;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dots {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.dot.red {
+    background: #ff5f56;
+}
+
+.dot.yellow {
+    background: #ffbd2e;
+}
+
+.dot.green {
+    background: #27c93f;
+}
+
+.terminal-title {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.terminal-body {
+    background: var(--terminal-bg);
+    padding: 1.5rem;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.8;
+    min-height: 600px;
+    color: var(--terminal-text);
+}
+
+.line {
+    margin: 0.25rem 0;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.line.prompt {
+    color: var(--green);
+}
+
+.line.muted {
+    color: #666;
+}
+
+.line.error {
+    color: var(--error);
+}
+
+.line.success {
+    color: var(--success);
+}
+
+.line.agent {
+    color: var(--blue);
+}
+
+.line.human {
+    color: var(--purple);
+}
+
+.line.comment {
+    color: #5c6370;
+    font-style: italic;
+}
+
+.line-indent {
+    margin-left: 2rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.json-key {
+    color: #61afef;
+}
+
+.json-value {
+    color: #98c379;
+}
+
+.json-value.success {
+    color: var(--success);
+}
+
+.json-value.critical {
+    color: var(--critical);
+    font-weight: bold;
+}
+
+.profit {
+    color: var(--success);
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* ============================================
+   STATS SECTION
+   ============================================ */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4rem;
+    max-width: 1200px;
+    margin: 6rem auto;
+    padding: 4rem 2rem;
+    border-top: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ============================================
+   CTA SECTION
+   ============================================ */
+
+.cta {
+    text-align: center;
+    padding: 6rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.cta h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+}
+
+.cta p {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn {
+    padding: 1rem 2.5rem;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+}
+
+.btn.secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--text-primary);
+}
+
+.btn.secondary:hover {
+    background: var(--text-primary);
+    color: white;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-top: 1px solid #e5e5e5;
+    color: var(--text-muted);
+}
+
+footer p {
+    margin: 0.5rem 0;
+}
+
+footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .terminal-container {
+        grid-template-columns: 1fr;
+    }
+
+    .headline {
+        font-size: 3rem;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .navbar {
+        padding: 1.5rem 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .headline {
+        font-size: 2.5rem;
+    }
+
+    .cta h2 {
+        font-size: 2rem;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
+    }
+
+    .terminal-body {
+        font-size: 0.75rem;
+    }
+}

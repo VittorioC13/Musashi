@@ -1,17 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Musashi",
-  "version": "1.0.0",
-  "description": "Overlay prediction market odds from Kalshi on Twitter/X",
+  "version": "2.0.0",
+  "description": "AI-powered prediction market intelligence for Twitter/X - Polymarket & Kalshi signals",
   "permissions": [
     "storage",
     "activeTab",
-    "tabs"
+    "tabs",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://twitter.com/*",
     "https://x.com/*",
     "https://gamma-api.polymarket.com/*",
+    "https://clob.polymarket.com/*",
     "https://api.elections.kalshi.com/*"
   ],
   "action": {
@@ -45,5 +47,14 @@
       "resources": ["icons/*"],
       "matches": ["https://twitter.com/*", "https://x.com/*"]
     }
-  ]
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
 }
