@@ -10,8 +10,8 @@
       ]
     },
     "condition": {
-      "urlFilter": "api.elections.kalshi.com/*",
-      "resourceTypes": ["xmlhttprequest"]
+      "requestDomains": ["api.elections.kalshi.com"],
+      "resourceTypes": ["xmlhttprequest", "other"]
     }
   },
   {
@@ -25,8 +25,8 @@
       ]
     },
     "condition": {
-      "urlFilter": "gamma-api.polymarket.com/*",
-      "resourceTypes": ["xmlhttprequest"]
+      "requestDomains": ["gamma-api.polymarket.com"],
+      "resourceTypes": ["xmlhttprequest", "other"]
     }
   },
   {
@@ -40,8 +40,8 @@
       ]
     },
     "condition": {
-      "urlFilter": "clob.polymarket.com/*",
-      "resourceTypes": ["xmlhttprequest"]
+      "requestDomains": ["clob.polymarket.com"],
+      "resourceTypes": ["xmlhttprequest", "other"]
     }
   }
 ]

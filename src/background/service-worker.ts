@@ -16,6 +16,7 @@ const STORAGE_KEY_TS      = 'marketsTs_v2';
 const STORAGE_KEY_ARBITRAGE = 'arbitrage_v1';
 const STORAGE_KEY_ARBITRAGE_TS = 'arbitrageTs_v1';
 const CACHE_TTL_MS        = 5 * 60 * 1000; // 5 minutes (reduced from 30)
+const NETWORK_RULESET_ID = 'ruleset_1';
 
 // Price polling configuration
 const PRICE_POLL_INTERVAL_MS = 60 * 1000; // Poll every 60 seconds
@@ -23,14 +24,50 @@ const TOP_MARKETS_COUNT = 50; // Track top 50 markets by volume
 
 console.log('[Musashi SW] Service worker initialized');
 
+// Ensure declarativeNetRequest ruleset is enabled before any API fetches.
+async function ensureNetworkRulesReady(): Promise<void> {
+  if (!chrome.declarativeNetRequest?.getEnabledRulesets) return;
+
+  const enabledRulesets = await new Promise<string[]>((resolve, reject) => {
+    chrome.declarativeNetRequest.getEnabledRulesets((rulesets) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve(rulesets ?? []);
+    });
+  });
+
+  if (enabledRulesets.includes(NETWORK_RULESET_ID)) return;
+
+  await new Promise<void>((resolve, reject) => {
+    chrome.declarativeNetRequest.updateEnabledRulesets(
+      { enableRulesetIds: [NETWORK_RULESET_ID] },
+      () => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        resolve();
+      }
+    );
+  });
+
+  console.log(`[Musashi SW] Enabled DNR ruleset: ${NETWORK_RULESET_ID}`);
+}
+
+const bootstrapPromise = ensureNetworkRulesReady().catch((error) => {
+  console.warn('[Musashi SW] Failed to verify/enable DNR ruleset:', error);
+});
+
 // ── Proactive fetch on install / browser startup ──────────────────────────────
 
 chrome.runtime.onInstalled.addListener(() => {
-  refreshMarkets();
+  bootstrapPromise.then(() => refreshMarkets());
   startPricePolling();
 });
 chrome.runtime.onStartup.addListener(() => {
-  refreshMarkets();
+  bootstrapPromise.then(() => refreshMarkets());
   startPricePolling();
 });
 
@@ -53,6 +90,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // Fetch fresh
       console.log('[Musashi SW] Fetching fresh markets from Polymarket + Kalshi...');
+      await bootstrapPromise;
       const fresh = await refreshMarkets();
       sendResponse({ markets: fresh });
     }).catch((e) => {
