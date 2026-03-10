@@ -7,7 +7,7 @@
 import blessed from 'blessed';
 import { AppState } from '../app-state';
 import { BaseComponent } from './base';
-import { formatPrice, formatSpread, truncate, getPlatformName } from '../utils';
+import { formatPrice, formatSpread } from '../utils';
 
 export class ArbitragePanel extends BaseComponent {
   constructor(screen: blessed.Widgets.Screen) {
@@ -22,6 +22,7 @@ export class ArbitragePanel extends BaseComponent {
       style: {
         border: { fg: 'yellow' },
       },
+      wrap: true,
       scrollable: true,
       alwaysScroll: true,
     });
@@ -31,7 +32,7 @@ export class ArbitragePanel extends BaseComponent {
   }
 
   render(state: AppState) {
-    const arbs = state.arbitrage.slice(0, 2); // Show top 2 arbs
+    const arbs = this.getUniqueArbitrage(state).slice(0, 2); // Show top 2 unique arbs
 
     if (arbs.length === 0) {
       this.box.setContent('{gray-fg}No arbitrage opportunities found...\nMinimum spread: ' + (state.settings.minArbSpread * 100) + '%{/gray-fg}');
@@ -45,7 +46,7 @@ export class ArbitragePanel extends BaseComponent {
         lines.push('{gray-fg}────────────────────────────────{/gray-fg}');
       }
 
-      const title = truncate(arb.polymarket.title, 38);
+      const title = arb.polymarket.title;
       const polyYes = arb.polymarket.yesPrice;
       const polyNo = arb.polymarket.noPrice;
       const kalshiYes = arb.kalshi.yesPrice;
@@ -55,15 +56,9 @@ export class ArbitragePanel extends BaseComponent {
       const yesSpread = Math.abs(polyYes - kalshiYes);
       const noSpread = Math.abs(polyNo - kalshiNo);
 
-      lines.push(`{bold}${title}{/bold}`);
-      lines.push('');
-
-      // YES/NO split boxes
-      lines.push('┌──── YES ──────┬──── NO ───────┐');
-      lines.push(`│ {magenta-fg}Poly{/magenta-fg}:  ${formatPrice(polyYes).padEnd(6)} │ {magenta-fg}Poly{/magenta-fg}:  ${formatPrice(polyNo).padEnd(6)} │`);
-      lines.push(`│ {blue-fg}Klsh{/blue-fg}:  ${formatPrice(kalshiYes).padEnd(6)} │ {blue-fg}Klsh{/blue-fg}:  ${formatPrice(kalshiNo).padEnd(6)} │`);
-      lines.push(`│ Δ:     ${formatSpread(yesSpread).padEnd(6)} │ Δ:     ${formatSpread(noSpread).padEnd(6)} │`);
-      lines.push('└───────────────┴───────────────┘');
+      lines.push(...this.wrapLine(`{bold}${title}{/bold}`));
+      lines.push(`YES: {magenta-fg}Poly{/magenta-fg} ${formatPrice(polyYes)} | {blue-fg}Klsh{/blue-fg} ${formatPrice(kalshiYes)} | Δ ${formatSpread(yesSpread)}`);
+      lines.push(`NO:  {magenta-fg}Poly{/magenta-fg} ${formatPrice(polyNo)} | {blue-fg}Klsh{/blue-fg} ${formatPrice(kalshiNo)} | Δ ${formatSpread(noSpread)}`);
 
       // Summary
       const totalSpread = formatSpread(arb.spread);
@@ -74,5 +69,43 @@ export class ArbitragePanel extends BaseComponent {
     });
 
     this.box.setContent(lines.join('\n'));
+  }
+
+  private getUniqueArbitrage(state: AppState): AppState['arbitrage'] {
+    const seen = new Set<string>();
+    const unique: AppState['arbitrage'] = [];
+
+    for (const arb of state.arbitrage) {
+      const key = `${arb.polymarket.title.trim().toLowerCase()}|${arb.direction}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(arb);
+    }
+
+    return unique;
+  }
+
+  private wrapLine(line: string): string[] {
+    const boxWidth = typeof this.box.width === 'number' ? this.box.width : 70;
+    const max = Math.max(30, boxWidth - 4);
+
+    if (line.length <= max) return [line];
+
+    const words = line.split(' ');
+    const out: string[] = [];
+    let current = '';
+
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > max && current) {
+        out.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+
+    if (current) out.push(current);
+    return out;
   }
 }
