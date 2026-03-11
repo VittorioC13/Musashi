@@ -8,7 +8,8 @@ interface InstallCodeRevealProps {
 
 export default function InstallCodeReveal({ showCode }: InstallCodeRevealProps) {
   return (
-    <div className="absolute right-0 top-0 w-[860px] h-[860px] pointer-events-none">{/* Removed buttons, just the visual display */}
+    <div className="absolute right-0 top-0 w-[860px] h-[860px]">
+      {/* Removed buttons, just the visual display */}
 
       {/* Musashi Image (default) */}
       <div
