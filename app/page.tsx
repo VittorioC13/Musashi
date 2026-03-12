@@ -68,30 +68,6 @@ export default function Home() {
         <TerminalDemo />
       </div>
 
-      {/* Platforms Section */}
-      <section className="flex flex-col items-center gap-12 w-full px-[120px] py-[80px] bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
-        <h2 className="font-grotesk text-[var(--text-primary)] text-[42px] font-bold tracking-[-1px] text-center">
-          The Bridge Between Social & Markets
-        </h2>
-        <p className="font-jetbrains text-[var(--text-secondary)] text-[13px] font-normal leading-[1.7] text-center w-[600px]">
-          Live data from the two largest prediction market platforms, matched against Twitter conversations. Structured for humans and agents alike.
-        </p>
-
-        <div className="flex items-center justify-center gap-10 w-full">
-          <div className="flex-1 flex flex-col items-center gap-3 px-12 py-8 bg-[var(--bg-tertiary)] border border-[var(--border-primary)]">
-            <span className="font-grotesk text-[var(--text-primary)] text-[22px] font-bold">Polymarket</span>
-            <span className="font-jetbrains text-[var(--text-muted)] text-[13px] font-medium">500+ markets</span>
-            <span className="font-jetbrains text-[var(--text-tertiary)] text-[11px] font-normal">Live CLOB API price updates every 60s</span>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center gap-3 px-12 py-8 bg-[var(--bg-tertiary)] border border-[var(--border-primary)]">
-            <span className="font-grotesk text-[var(--text-primary)] text-[22px] font-bold">Kalshi</span>
-            <span className="font-jetbrains text-[var(--text-muted)] text-[13px] font-medium">400+ markets</span>
-            <span className="font-jetbrains text-[var(--text-tertiary)] text-[11px] font-normal">CFTC-regulated exchange</span>
-          </div>
-        </div>
-      </section>
-
       {/* Advanced Features Section */}
       <section className="flex flex-col items-center gap-12 w-full px-[120px] py-[80px] bg-[var(--bg-primary)]">
         <h2 className="font-grotesk text-[var(--text-primary)] text-[42px] font-bold tracking-[-1px] text-center">
