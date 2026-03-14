@@ -7,6 +7,7 @@
     "dev": "webpack --mode development --watch",
     "clean": "rm -rf dist",
     "agent": "tsx cli/index.ts",
+    "agent:test:api": "tsx scripts/test-agent-api.ts",
     "agent:dashboard": "node scripts/agent-dashboard.mjs",
     "agent:build": "esbuild cli/index.ts --bundle --platform=node --outfile=dist/agent.js --external:blessed",
     "agent:start": "node dist/agent.js",

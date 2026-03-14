@@ -153,6 +153,35 @@ Use:
 npx tsx test-sdk.ts
 ```
 
+### Comprehensive API + edge-case test
+
+Run the broader contract test suite:
+
+```bash
+npm run agent:test:api
+```
+
+Useful overrides:
+
+```bash
+MUSASHI_API_BASE_URL=http://127.0.0.1:3000 npm run agent:test:api
+MUSASHI_TEST_TIMEOUT_MS=30000 npm run agent:test:api
+API_USAGE_ADMIN_KEY=your-key npm run agent:test:api
+```
+
+What it covers:
+- Happy-path checks for `health`, `analyze-text`, `arbitrage`, `movers`, `feed`, `feed/stats`, and `feed/accounts`
+- SDK smoke test via `MusashiAgent`
+- Method guards such as `GET /api/analyze-text -> 405`
+- Validation failures such as bad numeric thresholds, invalid categories, invalid urgency, and oversize text
+- Contract edge cases such as malformed `since` timestamps and degraded `503` health/data responses
+- Optional usage-audit verification when `API_USAGE_ADMIN_KEY` is present
+
+How to read results:
+- `PASS`: endpoint behavior matches the expected contract
+- `WARN`: behavior is usable but degraded or environment-dependent (for example upstream `503`)
+- `FAIL`: contract mismatch, bad status code, malformed payload, timeout, or network failure
+
 ## Repository Pointers
 
 - SDK: `src/sdk/musashi-agent.ts`
